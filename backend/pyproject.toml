@@ -1,0 +1,26 @@
+# Tool configuration for the RAGGuard backend (dependencies live in requirements*.txt).
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]
+markers = [
+    "ollama: real local inference through a running Ollama service (opt-in, see README)",
+]
+addopts = "-m 'not ollama'"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF"]
+
+[tool.ruff.lint.per-file-ignores]
+# The system prompt keeps one rule per line for readability.
+"app/generation/prompts.py" = ["E501"]
+
+[tool.mypy]
+python_version = "3.13"
+strict = true
+packages = ["app"]
+ignore_missing_imports = true

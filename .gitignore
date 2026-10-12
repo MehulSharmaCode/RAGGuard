@@ -1,0 +1,75 @@
+# ---------------------------------------------------------------
+# Secrets and local environment
+# ---------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# ---------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+
+# Python tooling caches
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+.tox/
+.nox/
+
+# ---------------------------------------------------------------
+# Node / frontend
+# ---------------------------------------------------------------
+node_modules/
+frontend/dist/
+frontend/build/
+frontend/.vite/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+.eslintcache
+
+# ---------------------------------------------------------------
+# Generated evaluation output and local tracking data
+# (the version-controlled dataset in evaluation/datasets/ is NOT ignored)
+# ---------------------------------------------------------------
+evaluation/results/
+evaluation/reports/
+mlruns/
+mlartifacts/
+mlflow.db
+
+# Local vector store data
+qdrant_storage/
+qdrant_data/
+
+# Locally uploaded documents used during development
+uploads/
+backend/uploads/
+
+# ---------------------------------------------------------------
+# Logs, OS and editor files
+# ---------------------------------------------------------------
+*.log
+logs/
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

@@ -1,0 +1,136 @@
+/* Self-hosted fonts (bundled by Vite; no runtime font CDN). Latin subsets only. */
+@import "@fontsource/ibm-plex-sans/latin-400.css";
+@import "@fontsource/ibm-plex-sans/latin-500.css";
+@import "@fontsource/ibm-plex-sans/latin-600.css";
+@import "@fontsource/ibm-plex-mono/latin-400.css";
+@import "@fontsource/ibm-plex-mono/latin-500.css";
+@import "@fontsource/source-serif-4/latin-400.css";
+@import "@fontsource/source-serif-4/latin-600.css";
+
+@import "tailwindcss";
+@import "./tokens.css";
+
+/*
+ * Tailwind theme bound to the design tokens. Default palettes, font sizes, radii
+ * and shadows are removed so that only token-based utilities exist.
+ */
+@theme inline {
+  --color-*: initial;
+  --color-ink-900: var(--ink-900);
+  --color-ink-700: var(--ink-700);
+  --color-ink-500: var(--ink-500);
+  --color-ink-300: var(--ink-300);
+  --color-paper-50: var(--paper-50);
+  --color-paper-100: var(--paper-100);
+  --color-paper-200: var(--paper-200);
+  --color-paper-300: var(--paper-300);
+  --color-line-strong: var(--line-strong);
+  --color-accent-300: var(--accent-300);
+  --color-accent-500: var(--accent-500);
+  --color-accent-800: var(--accent-800);
+  --color-on-accent: var(--on-accent);
+  --color-pass: var(--status-pass);
+  --color-fail: var(--status-fail);
+  --color-warn: var(--status-warn);
+  --color-pending: var(--status-pending);
+  --color-scrim: var(--scrim);
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  --font-*: initial;
+  --font-sans: "IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  --font-serif: "Source Serif 4", Georgia, "Times New Roman", serif;
+
+  /* Type scale (§4): size / line-height */
+  --text-*: initial;
+  --text-12: 12px;
+  --text-12--line-height: 16px;
+  --text-13: 13px;
+  --text-13--line-height: 18px;
+  --text-14: 14px;
+  --text-14--line-height: 20px;
+  --text-16: 16px;
+  --text-16--line-height: 26px;
+  --text-18: 18px;
+  --text-18--line-height: 26px;
+  --text-22: 22px;
+  --text-22--line-height: 28px;
+  --text-28: 28px;
+  --text-28--line-height: 34px;
+
+  --radius-*: initial;
+  --radius-xs: 2px;
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-full: 9999px;
+
+  --shadow-*: initial;
+  --shadow-raised: var(--shadow-raised);
+
+  --ease-out: cubic-bezier(0.2, 0.7, 0.2, 1);
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    background: var(--paper-100);
+    color: var(--ink-900);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 20px;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Focus ring: accent outer ring + ink inner edge, visible on paper and on accent fills (§12). */
+  :focus-visible {
+    outline: 2px solid var(--accent-500);
+    outline-offset: 2px;
+    box-shadow: 0 0 0 2px var(--ink-900);
+  }
+
+  ::selection {
+    background: var(--accent-300);
+    color: var(--on-accent);
+  }
+}
+
+@layer utilities {
+  .tnum {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* 12px mono uppercase section label (§4). */
+  .section-label {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    line-height: 16px;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-500);
+  }
+
+  .reading {
+    font-family: var(--font-serif);
+    font-size: 16px;
+    line-height: 26px;
+    max-width: 70ch;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  ::before,
+  ::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
