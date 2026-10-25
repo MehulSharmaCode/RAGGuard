@@ -1,17 +1,27 @@
 /**
  * Pipeline (UI_DESIGN_SPEC §8.5, Stage 5.5 scope): the RAG flow as implemented, live
- * component status from GET /system/status, and the stages that do not exist yet.
- * No CI runs, builds, or deployments are shown because none exist.
+ * component status from GET /system/status, recent GitHub Actions runs (Stage 7, read from
+ * GitHub's public API; see lib/api/github.ts), and the stages that do not exist yet.
+ * Only runs GitHub reports are shown: nothing is inferred, and nothing is deployed by CI.
  */
 
-import { ArrowDown, ArrowRight, RotateCw } from "lucide-react";
-import { Fragment } from "react";
+import { ArrowDown, ArrowRight, ExternalLink, RotateCw } from "lucide-react";
+import { Fragment, useRef } from "react";
 import { routeHref } from "../../app/useRoute";
 import { Section } from "../../components/data/Section";
 import { Button } from "../../components/ui/Button";
 import { InlineAlert } from "../../components/ui/InlineAlert";
 import { StatusTag, type Tone } from "../../components/ui/StatusTag";
 import { getSystemStatus } from "../../lib/api/endpoints";
+import {
+  actionsUrl,
+  commitUrl,
+  configuredRepository,
+  getCiRuns,
+  type CiRun,
+  type CiRuns,
+  type RunState,
+} from "../../lib/api/github";
 import { formatDateTime } from "../../lib/format";
 import { formatMetric } from "../../lib/metrics";
 import { useResource } from "../../lib/useResource";
@@ -129,6 +139,158 @@ function StatusTable({ status }: { status: SystemStatus }) {
         </tbody>
       </table>
     </div>
+  );
+}
+
+const RUN: Record<RunState, { tone: Tone; label: string }> = {
+  success: { tone: "pass", label: "Passed" },
+  failure: { tone: "fail", label: "Failed" },
+  cancelled: { tone: "warn", label: "Cancelled" },
+  in_progress: { tone: "loading", label: "Running" },
+  queued: { tone: "pending", label: "Queued" },
+  action_required: { tone: "warn", label: "Needs approval" },
+  other: { tone: "pending", label: "Not completed" },
+};
+
+function runLabel(run: CiRun): string {
+  const base = RUN[run.state].label;
+  // Show GitHub's own words for outcomes this view has no specific label for (skipped, neutral, ...).
+  return run.state === "other" ? (run.conclusion ?? run.status).replaceAll("_", " ") : base;
+}
+
+function RunsTable({ ci }: { ci: CiRuns }) {
+  return (
+    <div className="relative overflow-x-auto">
+      <table className="w-full min-w-[720px] border-collapse text-13" aria-label="Recent workflow runs">
+        <thead className="text-left text-12 text-ink-500">
+          <tr className="border-b border-paper-300">
+            <th scope="col" className="py-1.5 pr-3 font-medium">Run</th>
+            <th scope="col" className="py-1.5 pr-3 font-medium">Result</th>
+            <th scope="col" className="py-1.5 pr-3 font-medium">Trigger</th>
+            <th scope="col" className="py-1.5 pr-3 font-medium">Commit</th>
+            <th scope="col" className="py-1.5 font-medium">Started</th>
+          </tr>
+        </thead>
+        <tbody>
+          {ci.runs.map((run) => (
+            <tr key={run.id} className="border-b border-paper-300 align-top last:border-b-0">
+              <th scope="row" className="py-2 pr-3 text-left font-normal text-ink-900">
+                <a
+                  href={run.url}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="inline-flex items-center gap-1 text-accent-800 underline underline-offset-2"
+                  aria-label={`Open run ${run.runNumber} of ${run.workflowName} on GitHub`}
+                >
+                  {run.workflowName} #{run.runNumber}
+                  <ExternalLink aria-hidden="true" size={12} />
+                </a>
+                <span className="block text-12 text-ink-500">
+                  {run.title}
+                  {run.attempt > 1 && ` · attempt ${run.attempt}`}
+                </span>
+              </th>
+              <td className="py-2 pr-3 whitespace-nowrap">
+                <StatusTag tone={RUN[run.state].tone}>{runLabel(run)}</StatusTag>
+              </td>
+              <td className="py-2 pr-3 text-ink-700">
+                {run.event.replaceAll("_", " ")}
+                {run.branch && <span className="block font-mono text-12 text-ink-500">{run.branch}</span>}
+              </td>
+              <td className="py-2 pr-3 whitespace-nowrap">
+                <a
+                  href={commitUrl(ci.repository, run.commit)}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  className="font-mono text-12 text-accent-800 underline underline-offset-2"
+                >
+                  {run.commit.slice(0, 7)}
+                </a>
+              </td>
+              <td className="py-2 text-12 whitespace-nowrap text-ink-500">{formatDateTime(run.createdAt)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+function CiRunsSection() {
+  const force = useRef(false);
+  const repository = configuredRepository();
+  const runs = useResource("ci-runs", (signal) => {
+    const forced = force.current;
+    return getCiRuns(signal, { force: forced }).finally(() => {
+      if (forced) force.current = false;
+    });
+  });
+  const ci = runs.data;
+  const refresh = () => {
+    force.current = true;
+    runs.refresh();
+  };
+  const link = repository && (
+    <a href={actionsUrl(repository)} target="_blank" rel="noreferrer noopener" className="font-mono text-accent-800 underline underline-offset-2">
+      {repository}
+    </a>
+  );
+  return (
+    <Section
+      id="ci-title"
+      title="Continuous integration"
+      description="Recent GitHub Actions runs of this repository, read by your browser from GitHub's public API (no token). They are not part of the RAGGuard API. CI runs the checks, the offline quality gate, and a build of the Docker images; it deploys nothing."
+    >
+      <div className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3 text-12 text-ink-500">
+          <span>{link ?? "No repository configured."}</span>
+          <span className="flex items-center gap-3">
+            {ci && (
+              <span>
+                {ci.fromCache ? "Saved" : "Fetched"} {formatDateTime(ci.fetchedAt)}
+                {ci.rateLimit?.remaining != null && ` · ${ci.rateLimit.remaining} of ${ci.rateLimit.limit ?? "?"} GitHub requests left this hour`}
+              </span>
+            )}
+            <Button size="sm" icon={RotateCw} loading={runs.loading} onClick={refresh}>
+              Refresh runs
+            </Button>
+          </span>
+        </div>
+
+        {runs.loading && !ci && (
+          <p className="text-13 text-ink-500" aria-busy="true">
+            Loading runs from GitHub…
+          </p>
+        )}
+
+        {runs.error && (
+          <InlineAlert
+            tone="error"
+            title="Could not load CI runs"
+            action={
+              <Button size="sm" icon={RotateCw} onClick={refresh}>
+                Retry
+              </Button>
+            }
+          >
+            {runs.error.message} No run status is shown, so none is assumed to have passed.
+          </InlineAlert>
+        )}
+
+        {ci?.staleReason && (
+          <InlineAlert tone="warning" title="These runs may be out of date">
+            Showing the copy saved at {formatDateTime(ci.fetchedAt)} because GitHub could not be read now: {ci.staleReason}
+          </InlineAlert>
+        )}
+
+        {ci && ci.runs.length === 0 && (
+          <p className="text-13 text-ink-700">
+            GitHub reports no workflow runs for {ci.repository}. Nothing is shown because nothing has run there yet.
+          </p>
+        )}
+        {ci && ci.runs.length > 0 && <RunsTable ci={ci} />}
+      </div>
+    </Section>
   );
 }
 
@@ -266,10 +428,12 @@ export default function PipelineView() {
         {data && <StatusTable status={data} />}
       </Section>
 
+      <CiRunsSection />
+
       <Section id="planned-title" title="Not built yet">
         <Planned status={data} />
         <p className="mt-3 text-12 text-ink-500">
-          No CI workflow, quality gate, or automated release exists yet, so no CI runs, builds, or deployments are shown here.
+          CI builds the Docker images but publishes none and deploys nothing, so no releases or deployments are shown here.
         </p>
       </Section>
     </div>

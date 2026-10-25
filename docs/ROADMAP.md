@@ -12,10 +12,10 @@ Authoritative stage status. A stage is marked **Complete** only after every comp
 | 5.5 | Conversation persistence, functional dashboards, and product integration (inserted 2026-10-14, D-053) | Implemented and automatically verified (2026-10-14); pre-demo pass 2026-10-15 and retrieval reliability pass 2026-10-16 (below) — **owner's manual acceptance pending** |
 | 5.7 | Cross-document reliability and conversation isolation (owner brief 2026-10-16; D-064–D-066), stabilisation 2026-10-16–18 (D-067, D-068), closure 2026-10-25 (D-069–D-074) | **Complete (2026-10-25)** — automated stage criteria verified (below) and **the owner's manual acceptance passed (2026-10-25)**; residual failures documented |
 | 6 | Docker and Docker Compose integration (D-075–D-078) | **Complete (2026-10-26)** — every feasible criterion of the acceptance gate evidenced (below) and **the owner's manual acceptance passed (2026-10-26)**; linux/amd64, Linux hosts and an in-place volume restore untested (documented) |
-| 7 | GitHub Actions testing and automated quality gate | Not started |
+| 7 | GitHub Actions testing and automated quality gate (D-079–D-084) | **Implemented and locally verified (2026-10-26); hosted verification pending** — the workflow has not run on GitHub yet (it needs a push, which the owner has not requested); owner's acceptance pending |
 | 8 | End-to-end integration, verification, documentation, and demonstration preparation | Not started |
 
-**2026-10-26:** Stage 6 (Docker) implemented, verified (below), and accepted by the owner; committed as `feat: complete Stage 6 Docker deployment`. **Next: Stage 7 only on the owner's explicit instruction.** (2026-10-25: Stage 5.7 closed — closure pass, checkpoint `e3738ab`, the owner's manual acceptance passed.)
+**2026-10-26:** Stage 6 (Docker) implemented, verified (below), accepted by the owner, and committed as `feat: complete Stage 6 Docker deployment`. **Stage 7 (CI and quality gate) is implemented and verified locally; its hosted runs are pending a push (below). Stage 8 starts only on the owner's explicit instruction.** (2026-10-25: Stage 5.7 closed — closure pass, checkpoint `e3738ab`, the owner's manual acceptance passed.)
 
 ---
 
@@ -308,14 +308,41 @@ Details: `PROGRESS_LOG.md` 2026-10-25, D-069–D-074. No Docker, CI, or redesign
 ## Stage 7 — GitHub Actions testing and automated quality gate
 
 **Tasks**
-- Resolve U-012, U-013, U-014.
-- Workflow: install, lint/type-check, API tests, evaluation suite, quality gate, then image build (and further release stages, as configured) dependent on the gate.
-- Report gate results on the workflow run; connect the Pipeline view to real CI data (U-015).
+- Resolve U-012, U-013, U-014. *Done: D-082, D-080 (build-only), see `DECISIONS.md`.*
+- Workflow: install, lint/type-check, API tests, evaluation suite, quality gate, then image build (and further release stages, as configured) dependent on the gate. *Done as `.github/workflows/ragguard-ci.yml` (D-080); the "evaluation suite" is the offline, model-free gate (D-079); release stages are not configured: no registry, no deployment (U-020).*
+- Report gate results on the workflow run; connect the Pipeline view to real CI data (U-015). *Done: workflow step summary and report artifact; Pipeline view CI section (D-083).*
+
+**Delivered (2026-10-26, owner brief "Stage 7 only"; D-079–D-084; nothing committed or pushed)**
+- `.github/workflows/ragguard-ci.yml` (jobs `backend-checks`, `frontend-checks`, `dataset-validation`, `quality-gate`, `image-build`, `ci-result`), `.github/actions/setup-backend/action.yml`, `.github/scripts/ci_result.py`.
+- `backend/app/evaluation/quality_gate.py` (CLI `run`, `evaluate`, `validate-datasets`, `list-datasets`, `junit`) and `evaluation/quality_gate.json` (thresholds, expected datasets and configuration, evidence).
+- Tests: `test_quality_gate.py` (39), `test_ci_workflow.py` (45); frontend `ciRuns.test.tsx` (41); the existing tests that pinned the old `ci` state were updated.
+- Pipeline view: CI runs from GitHub's public API; Nginx CSP `connect-src` allows `https://api.github.com`; `GET /system/status` `ci` component `configured` (schema unchanged). `/query` unchanged.
+
+### Stage 7 acceptance
+
+| # | Criterion | Evidence (details: `PROGRESS_LOG.md` 2026-10-26, Stage 7) | Status |
+| --- | --- | --- | --- |
+| 1 | Workflow exists with the required jobs, triggers, concurrency, permissions | `ragguard-ci.yml`; structure test (45 tests); `actionlint` 1.7.12: no finding | Verified locally |
+| 2 | `image-build` depends on every check and the gate, no bypass | `needs` of all four jobs, no `if`/`always()`; graph simulation: failure, cancellation or skip of any prerequisite leaves it skipped | Verified locally (design test); hosted behaviour pending |
+| 3 | Backend and frontend checks, dataset validation | Same commands run locally: pytest 477 passed + 1 strict xfail + 0 skipped (junit check passes), ruff, format, mypy; Vitest 117, tsc, ESLint, build; `--validate-only` ×4 and fingerprint check | Verified locally; hosted pending |
+| 4 | Offline deterministic gate with versioned, measured thresholds | `quality_gate.json`; baselines on macOS, Linux arm64, Linux x86-64 (emulated): identical (D-081) | Verified |
+| 5 | A passing change passes the gate | Real run on the committed state: PASSED, exit 0 (about 13 s) | Verified locally; hosted pending |
+| 6 | A deliberately degraded change fails the gate and `image-build` does not run | Retrieval degraded in-process: FAILED, exit 1 (0/69 evidence hits); span withholding disabled: FAILED, exit 1 on `security.payload_exposed_cases` alone (20/24 core, 2/3 VEIL); mutation tests of the evaluator; graph simulation: `image-build` skipped | Verified locally (gate and graph); **a hosted failing run is pending** |
+| 7 | Both outcomes demonstrated and recorded | Locally: yes. On GitHub: **no run exists yet** | **Pending (needs a push)** |
+| 8 | Step summary: commit, dataset versions and fingerprints, metrics, thresholds, per-metric result, failure reasons, image-build eligibility, what was not run | Rendered and tested locally; GitHub's rendering not yet seen | Verified locally; hosted pending |
+| 9 | Image build reuses the Stage 6 configuration, no push, no deployment | `docker compose config -q` valid; same Dockerfiles, context and target as `compose.yaml` (tested); `push: false`; the check commands pass on scratch images | Verified locally; the `ragguard-*:ci` builds happen in the hosted run |
+| 10 | Pipeline view shows real CI data, with every state | Mocked-fetch tests (41); live API returned zero runs, so the empty state is the true state | Verified (mocked); real runs appear after the first hosted run |
+| 10a | `UI_DESIGN_SPEC.md` §8.5 coverage | Run list with real states delivered; per-run step track, gate detail with thresholds and "Currently serving / Candidate" **not** delivered, with reasons (`UI_DESIGN_SPEC.md` §18, `DECISIONS.md` §4) | Partial, documented |
+| 11 | No secrets, tokens, or paid services | No `secrets.*`, no token in the bundle (scanned), no Ollama/Gemini in CI | Verified |
+| 12 | U-010, U-012–U-015 resolved with evidence | `DECISIONS.md` D-080–D-083; U-020 opened | Verified |
+| 13 | Documentation synchronised; Stage 8 not started | This stage's documents updated | Verified |
+
+**Pending remote steps (owner):** push the branch (or open a pull request); confirm the first run; set branch protection to require `CI result`; push a deliberately failing change on a throw-away branch (or use *Run workflow* on one) to see the failing path on GitHub; then update this table. Stage 7 is not marked Complete until these are recorded.
 
 **Completion criteria**
-- A passing change proceeds to image build.
-- A deliberately degraded change fails the gate and the build/release jobs do not run.
-- Both outcomes are demonstrated and recorded.
+- A passing change proceeds to image build. *Locally: gate passes and the job graph allows `image-build`; on GitHub: pending.*
+- A deliberately degraded change fails the gate and the build/release jobs do not run. *Locally: gate fails, graph skips `image-build`; on GitHub: pending.*
+- Both outcomes are demonstrated and recorded. *Locally recorded; hosted outcomes pending.*
 
 ## Stage 8 — End-to-end integration, verification, documentation, and demonstration preparation
 

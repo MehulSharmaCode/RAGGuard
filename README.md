@@ -1,6 +1,6 @@
 # RAGGuard
 
-> **Status: under development (Stage 6 complete and accepted, 2026-10-26).** Stages 1–5 are complete; Stage 5.5 and Stage 5.7 (cross-document reliability, conversation isolation, its stabilisation, and the 2026-10-25 closure pass: prompt v8, evaluator e3) are implemented and automatically verified; **Stage 5.7 is closed: the owner's manual acceptance passed on 2026-10-25** (the owner's acceptance of Stages 5 and 5.5 was not recorded separately). Stages 6–8 are pending and start only on the owner's instruction. The backend ingests PDF/TXT files, answers questions with cited sources through a local LLM, and falls back safely when evidence is insufficient, with layered prompt-injection mitigations; the web frontend provides the document workspace (whose conversation survives navigation and reloads of the tab), the Evidence Trace, and Evaluation, Experiments, and Pipeline views on real data; an offline evaluation suite (the 85-case core benchmark incl. 31 prompt-injection scenarios, plus separate VEIL Document Challenge (20 cases), structural (41) and AgriSense (27) benchmarks) measures the same pipeline, writes JSON/Markdown reports, and logs runs to MLflow. **Stage 6 added a Docker Compose deployment, which passed the owner's manual acceptance on 2026-10-26** (web UI + API + Qdrant server with persistent volumes; Ollama stays on the host — see "Running with Docker" below); there is no CI gate yet, and the visual redesign is pending. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the authoritative stage status.
+> **Status: under development (Stage 6 complete and accepted, 2026-10-26; Stage 7 implemented and verified locally, awaiting its first run on GitHub).** Stages 1–5 are complete; Stage 5.5 and Stage 5.7 (cross-document reliability, conversation isolation, its stabilisation, and the 2026-10-25 closure pass: prompt v8, evaluator e3) are implemented and automatically verified; **Stage 5.7 is closed: the owner's manual acceptance passed on 2026-10-25** (the owner's acceptance of Stages 5 and 5.5 was not recorded separately). Stages 7 and 8 start only on the owner's instruction (Stage 7 was done on 2026-10-26 and is not yet committed, pushed, or accepted). The backend ingests PDF/TXT files, answers questions with cited sources through a local LLM, and falls back safely when evidence is insufficient, with layered prompt-injection mitigations; the web frontend provides the document workspace (whose conversation survives navigation and reloads of the tab), the Evidence Trace, and Evaluation, Experiments, and Pipeline views on real data; an offline evaluation suite (the 85-case core benchmark incl. 31 prompt-injection scenarios, plus separate VEIL Document Challenge (20 cases), structural (41) and AgriSense (27) benchmarks) measures the same pipeline, writes JSON/Markdown reports, and logs runs to MLflow. **Stage 6 added a Docker Compose deployment, which passed the owner's manual acceptance on 2026-10-26** (web UI + API + Qdrant server with persistent volumes; Ollama stays on the host — see "Running with Docker" below); **Stage 7 added a GitHub Actions workflow and an offline, deterministic quality gate (see "Continuous integration" below); both are verified locally, but the workflow has not yet run on GitHub**, and the visual redesign is pending. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the authoritative stage status.
 
 RAGGuard is a quality-gated Retrieval-Augmented Generation (RAG) application. Upload PDF or TXT documents, ask questions about them, and get answers grounded in retrieved evidence, with references to the source document and page.
 
@@ -8,7 +8,7 @@ What sets it apart is the release discipline around it: an automated evaluation 
 
 ## Core features
 
-Document ingestion, evidence-based answers, safe fallback (Stage 2), the document workspace interface (Stage 3), the offline evaluation suite (Stages 4–5, command line), MLflow tracking (Stage 5), and the evaluation, experiment, and pipeline views (Stage 5.5) are implemented; containers and CI are planned.
+Document ingestion, evidence-based answers, safe fallback (Stage 2), the document workspace interface (Stage 3), the offline evaluation suite (Stages 4–5, command line), MLflow tracking (Stage 5), and the evaluation, experiment, and pipeline views (Stage 5.5) are implemented; containers (Stage 6) and CI with the offline quality gate (Stage 7) are implemented; see below.
 
 - **Document ingestion** — PDF and TXT upload; layout-aware PDF text (page regions and table rows rebuilt from text positions, safe for PDFs that write text in tiny fragments); structure-aware chunks; each chunk embedded together with its rows, list items, and sentences, plus a lexical (BM25-weighted) vector; storage in Qdrant.
 - **Evidence-based answers** — hybrid retrieval of relevant passages (semantic and lexical candidates fused; a chunk becomes evidence only if its best-matching row, item, or sentence passes the semantic threshold; evidence is ordered by that score; the whole chunk is the cited passage), LLM answer generation constrained to that evidence, and source references (document, page where available).
@@ -16,7 +16,7 @@ Document ingestion, evidence-based answers, safe fallback (Stage 2), the documen
 - **Offline evaluation** — a fixed, version-controlled dataset of questions, reference answers, and expected sources over a synthetic corpus; deterministic metrics for retrieval, citations, answerability/fallback, required facts, and latency; an offline sweep of the evidence threshold; a local LLM judge as a supplementary signal only (see "Evaluation" below).
 - **Experiment tracking** — MLflow (local SQLite store) records each evaluation run's configuration, dataset fingerprint, metrics, and reports for comparison (see "MLflow experiment tracking" below).
 - **Prompt-injection mitigations** — retrieved text is treated as untrusted data: markup neutralisation, instruction and supersession labels, priority rules, and output guards (no claim of immunity; see `docs/ARCHITECTURE.md` §3c).
-- **Quality-gated CI/CD** — GitHub Actions runs API tests and the evaluation suite; a failed gate prevents image build and release.
+- **Quality-gated CI** — a GitHub Actions workflow runs the backend and frontend checks, validates the datasets, and applies an offline quality gate (retrieval, evidence, prompt-injection exposure, supersession; no LLM, no secrets); the Docker images are built only if all of it passes, and nothing is published or deployed (see "Continuous integration").
 - **Purpose-built interface** — document workspace with cited evidence and an Evidence Trace; an Evaluation view of saved reports with failed-case inspection; an Experiments view of MLflow runs with side-by-side comparison; a Pipeline view with the actual flow and live component status (Stage 5.5, read-only). Starting an evaluation from the UI and listing cases whose outcome changed between two runs are not implemented.
 
 ## High-level architecture
@@ -59,7 +59,7 @@ Unresolved choices (evaluation dataset, quality thresholds, deployment target) a
 5. Evaluation hardening, RAG reliability/security, and MLflow tracking
 5.5. Conversation persistence, functional dashboards, and product integration
 6. Docker and Docker Compose integration
-7. GitHub Actions testing and automated quality gate
+7. GitHub Actions testing and automated quality gate (implemented; hosted verification pending)
 8. End-to-end integration, verification, documentation, and demonstration preparation
 
 Optional extensions: Kubernetes, canary deployment, advanced monitoring.
@@ -74,7 +74,7 @@ RAGGuard/
 ├── compose.yaml   Docker Compose stack (Stage 6)
 ├── deployment/    Dockerfiles, Nginx config, smoke test, operating guide (Stage 6)
 ├── docs/          Project context, roadmap, decisions, log, architecture, UI spec
-└── .github/       CI workflows (Stage 7; placeholder only)
+└── .github/       CI workflow, shared setup action, final-status script (Stage 7)
 ```
 
 ## Documentation
@@ -168,7 +168,7 @@ The backend allows browser requests from `http://localhost:5173` and `http://127
 - **Trace this answer** — the Evidence Trace draws the real path for one answer: documents and pages → chunks → evidence supplied to the model → which of them the answer cites. Use the stage tabs (arrow keys, Home/End) and the evidence list to inspect each item. It uses 3D (three.js) when WebGL is available and falls back to a 2D diagram on small screens, with reduced motion, without WebGL, or on request ("Show 2D view"). It explains the evidence path; it does not prove an answer is correct.
 - **Evaluation** — the latest saved report (or any older one, also via `#/evaluation/<run_id>`): run header with dataset and configuration, open findings (successful attacks, canary leaks, superseded-source citations, false answers/refusals), metrics with their denominators ("Not recorded" when a report lacks a metric, "n/a" when no case applied — never shown as 0), a case table filtered by verdict, category, finding, and text, with expected vs. actual answer, retrieved passages, attack details, and the supplementary judge verdict; downloads of `report.json`/`report.md`. Opening it never starts an evaluation.
 - **Experiments** — MLflow runs of `ragguard-evaluation` with parameters, principal metrics, and artifact downloads; choose a baseline and a candidate to compare parameters and metrics. Runs on different datasets are marked not comparable, mixed results are shown as a trade-off, and an unavailable or missing tracking store is reported as such (never as zero runs).
-- **Pipeline** — the implemented RAG flow with the current settings (a code-path description, not recorded executions), live status of API, vector store, embedding model, generation, evaluation dataset, and MLflow (healthy / configured, not verified / unavailable), and what is not built yet (Docker, CI quality gate, visual redesign).
+- **Pipeline** — the implemented RAG flow with the current settings (a code-path description, not recorded executions), live status of API, vector store, embedding model, generation, evaluation dataset, and MLflow (healthy / configured, not verified / unavailable), recent GitHub Actions runs (read from GitHub's public API), and what is not built yet (visual redesign).
 - **Themes** — follows the system light/dark setting, with a manual override in the top bar.
 
 **Conversation history** survives switching between views and reloading the tab: it is kept in the tab's sessionStorage (last 50 questions with their answers and cited excerpts) until you use "Clear conversation" or close the tab. It is never sent anywhere; uploaded files are not stored in the browser.
@@ -253,7 +253,7 @@ Set `GENERATION_PROVIDER=gemini` and `GEMINI_API_KEY=<your key>` in `.env`, then
 
 ```bash
 cd backend
-.venv/bin/pytest                 # deterministic suite (390 tests + 1 documented xfail): no Ollama, no Gemini, temporary Qdrant, results, and MLflow stores
+.venv/bin/pytest                 # deterministic suite (477 tests + 1 documented xfail): no Ollama, no Gemini, temporary Qdrant, results, and MLflow stores
 .venv/bin/pytest -m ollama       # opt-in: one real end-to-end query through local Ollama
 .venv/bin/ruff check . && .venv/bin/ruff format --check . && .venv/bin/mypy
 ```
@@ -274,6 +274,33 @@ The embedding-model tests in `tests/test_embeddings_model.py` are skipped (with 
 | `500 configuration_error` mentioning dimensions | The collection was created with a different embedding model. Use a new `QDRANT_COLLECTION_NAME` or switch back. |
 | Every question returns `insufficient_evidence` | Nothing indexed, `document_ids` filter excludes the relevant file, or `MIN_RETRIEVAL_SCORE` is too strict. Check `evidence.max_score` in the response. |
 | `422 empty_document` for a PDF | The PDF has no extractable text (scanned/image-only); OCR is not supported. |
+
+## Continuous integration
+
+> **Status:** implemented and verified locally (Stage 7, D-079–D-084). The workflow has **not run on GitHub yet**; it needs a push. Until then, nothing here is claimed as passed on GitHub.
+
+`.github/workflows/ragguard-ci.yml` runs on **pull requests to `main`**, **pushes to `main`**, and **manual dispatch**. It has read-only permissions, uses no secrets, never uses `pull_request_target`, has no path filters, and cancels only a pull request's superseded runs.
+
+| Job | What it does |
+| --- | --- |
+| `backend-checks` | Python 3.13 with CPU-only PyTorch (as in the Docker image); `ruff check`, `ruff format --check`, `mypy`, the full `pytest`. A skipped test fails the job; exactly one strict xfail is expected; tests must leave no database or index in the checkout. |
+| `frontend-checks` | `npm ci`, typecheck, lint, Vitest, production build. |
+| `dataset-validation` | `--validate-only` for each gated dataset, then versions and fingerprints against `evaluation/quality_gate.json`. |
+| `quality-gate` | The offline quality gate (below). Needs `dataset-validation`. |
+| `image-build` | **Needs all four jobs above, with no `always()`.** `docker compose config -q`, then builds the backend and frontend images with `push: false`, and checks them. No registry, no deployment. |
+| `ci-result` | Always runs; lists every job, says whether the image build was eligible, and fails unless everything succeeded. |
+
+**The quality gate** (`python -m app.evaluation.quality_gate run`, from `backend/`) ingests each benchmark's corpus into a temporary index and applies the pipeline's own retrieval, evidence-gate and model-input code. It **never calls a generation model** (no Ollama, no Gemini, no keys, no cost). For all four benchmarks it checks that the expected evidence is retrieved and complete, that unrelated questions stay below the evidence gate, that injected documents are retrieved *and* their instructions are withheld from the model's copy, and that replaced documents do not reach the model. It **fails closed**: a missing or mismatched measurement, a changed dataset, configuration drift, or an error is a failure, and a security regression fails the gate however good the rest looks. The LLM judge and the full model-based benchmark ("Evaluation" below) are separate and not part of it; the report says so.
+
+- Thresholds live only in [`evaluation/quality_gate.json`](evaluation/quality_gate.json), with the measured baseline and rationale (D-081). They were set one question below the measured baseline (zero tolerance for abstention, supersession and injection exposure). They are never lowered to get a run green: after changing a dataset, the retrieval configuration, the prompt or the evaluator, re-measure and record the comparison.
+- Each run writes a Markdown **step summary** (commit, dataset versions and fingerprints, every metric against its threshold, failure reasons with case IDs, whether the image build was eligible, what was not run) and a `quality-gate-report` artifact containing case IDs and numbers only.
+- Locally: `cd backend && python -m app.evaluation.quality_gate run` (about 13 s with the embedding model cached; exit 0 = pass, 1 = fail, 2 = invalid gate file); `... validate-datasets`; `... junit junit.xml` for the pytest result check.
+
+**Branch protection (set this in GitHub; it cannot be done from the repository):** Settings → Branches → add a rule for `main` → *Require status checks to pass before merging* → select **`CI result`** (it reports on every job, including a skipped image build), and *Require branches to be up to date*. Optionally require a pull request. Require `CI result` rather than the individual jobs: GitHub reports a job that was skipped because a prerequisite failed as *skipped*, and a skipped required check can count as satisfied, whereas `CI result` fails explicitly unless every job, including the image build, succeeded.
+
+**Pipeline view.** The *Continuous integration* section of the Pipeline page lists the latest runs, read by your browser from GitHub's public API without a token (60 requests per hour per network; cached for 5 minutes; *Refresh runs* forces a read). It says plainly when GitHub has no runs, cannot be reached, or is rate limiting. Set `VITE_GITHUB_REPOSITORY` (`frontend/.env.example`) to point it at a fork.
+
+**Not run in CI, by design:** the Ollama and Gemini paths, the LLM judge, the full benchmark, and any publication of images.
 
 ## Evaluation
 

@@ -1,0 +1,60 @@
+name: Set up the RAGGuard backend
+description: >-
+  Python 3.13 and the pinned backend dependencies, with PyTorch's CPU wheel exactly as
+  deployment/backend.Dockerfile installs it (PyPI's Linux wheel is a CUDA build of several GB),
+  plus an optional cached embedding model. Needs no credentials of any kind.
+
+inputs:
+  requirements:
+    description: Requirements file under backend/ (requirements-dev.txt includes -eval and the runtime ones).
+    default: requirements-dev.txt
+  embedding-model:
+    description: Embedding model to cache in the Hugging Face cache; empty means none.
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
+      with:
+        python-version: "3.13"
+        cache: pip
+        cache-dependency-path: |
+          backend/requirements.txt
+          backend/requirements-eval.txt
+          backend/requirements-dev.txt
+
+    - name: Install the pinned dependencies (CPU-only PyTorch)
+      shell: bash
+      working-directory: backend
+      env:
+        REQUIREMENTS: ${{ inputs.requirements }}
+        PIP_DISABLE_PIP_VERSION_CHECK: "1"
+      run: |
+        set -euo pipefail
+        torch_pin="$(grep -E '^torch==' requirements.txt)"
+        python -m pip install --index-url https://download.pytorch.org/whl/cpu "${torch_pin}"
+        python -m pip install -r "${REQUIREMENTS}"
+        python -m pip check
+
+    - name: Restore the embedding-model cache
+      if: inputs.embedding-model != ''
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.cache/huggingface
+        key: huggingface-${{ runner.os }}-${{ inputs.embedding-model }}-v1
+
+    - name: Make sure the embedding model is present
+      if: inputs.embedding-model != ''
+      shell: bash
+      working-directory: backend
+      env:
+        EMBEDDING_MODEL: ${{ inputs.embedding-model }}
+      run: |
+        # Downloads only on a cache miss; afterwards this just loads the cached files.
+        python - <<'PY'
+        import os
+        from sentence_transformers import SentenceTransformer
+        model = SentenceTransformer(os.environ["EMBEDDING_MODEL"])
+        print("embedding model ready, dimension", model.get_embedding_dimension())
+        PY

@@ -24,7 +24,7 @@ Verified on 2026-10-25/26 with Docker Engine 29.8.0 and Docker Compose 5.5.1 on 
 
 **Ollama is not a container.** The model (`qwen3.5:9b`, 7+ GB) and the Mac's GPU live on the host; a Linux container on Docker Desktop cannot use the GPU. **MLflow is not a server either:** the existing local SQLite store + file artifacts are used, in a volume.
 
-The browser only ever talks to `http://127.0.0.1:8080`. Nginx serves the UI and forwards exactly the API route prefixes the UI uses to `backend:8000` (same origin: **no CORS**, no API URL baked into the JavaScript — the bundle is built with an empty `VITE_API_BASE_URL`). Host development (`npm run dev` on 5173, uvicorn on 8000) is unchanged and uses its own `http://localhost:8000` default.
+The browser talks to `http://127.0.0.1:8080` and, for one read-only list on the Pipeline page (recent GitHub Actions runs), anonymously to `https://api.github.com` (allowed in the Content-Security-Policy `connect-src`; no token, no data from your documents is sent; if GitHub is unreachable that list says so and nothing else changes). Nginx serves the UI and forwards exactly the API route prefixes the UI uses to `backend:8000` (same origin: **no CORS**, no API URL baked into the JavaScript — the bundle is built with an empty `VITE_API_BASE_URL`). Host development (`npm run dev` on 5173, uvicorn on 8000) is unchanged and uses its own `http://localhost:8000` default.
 
 ## 2. Files
 

@@ -161,9 +161,10 @@ def build_status(
         _component(
             "ci",
             "CI tests and quality gate (GitHub Actions)",
-            "not_implemented",
-            "Planned for Stage 7. No workflow exists and no gate has run; evaluation results "
-            "do not block anything yet.",
+            "configured",
+            "GitHub Actions workflow ragguard-ci.yml (checks, offline quality gate, image "
+            "build; nothing is pushed or deployed). The API does not query GitHub: recent "
+            "runs are listed below, read by the browser from GitHub's public API.",
             verified=False,
         )
     )

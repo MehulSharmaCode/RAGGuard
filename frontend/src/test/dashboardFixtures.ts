@@ -290,7 +290,13 @@ export const systemStatus: SystemStatus = {
     { id: "evaluation", label: "Evaluation dataset", state: "healthy", detail: "ragguard-synthetic v2.0.0: 85 cases, 42 corpus files, validated.", verified: true },
     { id: "tracking", label: "Experiment tracking (MLflow)", state: "healthy", detail: "15 run(s) in 'ragguard-evaluation'.", verified: true },
     { id: "containers", label: "Docker / Docker Compose", state: "not_implemented", detail: "Container packaging is planned for Stage 6.", verified: false },
-    { id: "ci", label: "CI tests and quality gate (GitHub Actions)", state: "not_implemented", detail: "Planned for Stage 7. No workflow exists.", verified: false },
+    {
+      id: "ci",
+      label: "CI tests and quality gate (GitHub Actions)",
+      state: "configured",
+      detail: "GitHub Actions workflow ragguard-ci.yml (checks, offline quality gate, image build; nothing is pushed or deployed).",
+      verified: false,
+    },
   ],
   configuration: {
     generation_provider: "ollama",

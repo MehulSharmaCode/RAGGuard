@@ -1,10 +1,12 @@
 # RAGGuard — Session Handoff
 
-_Written 2026-10-25 at the end of the Stage 5.7 closure; updated 2026-10-25 after the owner's manual acceptance (Stage 5.7 closed); updated 2026-10-26 after Stage 6 (Docker) and the owner's manual acceptance of it. This is the single handoff; current state lives in [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md), stage status in [`ROADMAP.md`](ROADMAP.md), decisions in [`DECISIONS.md`](DECISIONS.md), history in [`PROGRESS_LOG.md`](PROGRESS_LOG.md) (entry 2026-10-25)._
+_Written 2026-10-25 at the end of the Stage 5.7 closure; updated 2026-10-25 after the owner's manual acceptance (Stage 5.7 closed); updated 2026-10-26 after Stage 6 (Docker) and the owner's manual acceptance of it; updated 2026-10-26 after Stage 7 (CI and quality gate: implemented, hosted verification pending). This is the single handoff; current state lives in [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md), stage status in [`ROADMAP.md`](ROADMAP.md), decisions in [`DECISIONS.md`](DECISIONS.md), history in [`PROGRESS_LOG.md`](PROGRESS_LOG.md) (entry 2026-10-25)._
 
-> **No later stage may start without the owner's explicit authorisation.** Stage 7 (CI/CD) and Stage 8 (redesign) are **pending and not started**: no workflow exists (`.github/workflows/` holds only a placeholder) and no redesign work exists. Stage 6 (Docker) is complete (section 6). Never run `docker compose down -v`, `docker volume prune`, or `docker system prune --volumes`; do not start Docker Desktop on the owner's behalf without being asked.
+> **No later stage may start without the owner's explicit authorisation.** Stage 8 (redesign, end-to-end verification) is **not started**. Stage 7 (CI) is **implemented and verified locally but has not run on GitHub and is not accepted**: nothing is committed or pushed (section 7). Stage 6 (Docker) is complete (section 6). Never run `docker compose down -v`, `docker volume prune`, or `docker system prune --volumes`; do not start Docker Desktop on the owner's behalf without being asked.
 
 ## 1. Status
+
+**Stage 7 — GitHub Actions and the quality gate: implemented, verified locally, hosted verification pending (2026-10-26).** `.github/workflows/ragguard-ci.yml`, `evaluation/quality_gate.json` and `backend/app/evaluation/quality_gate.py` exist as uncommitted changes in the working tree (list: `git status`; details and remote steps: section 7). The owner has not yet reviewed, committed or pushed them, so **no workflow run exists on GitHub** and nothing may be reported as "CI passed". Stage 6 and 5.7 below stay accepted (unchanged).
 
 **Stage 6 — Docker and Docker Compose: closed, manual acceptance passed (2026-10-26).** `compose.yaml` + `deployment/` run the whole application in containers. Automated and runtime evidence: section 6 and the acceptance table in `ROADMAP.md`. Manual acceptance: the owner reported on 2026-10-26 that Stage 6 passed their manual acceptance on their Mac: the containerised application starts; AgriSense ingestion and question answering work; SIH retrieval and citations work; selecting only AgriSense stops answers from using SIH evidence; and a backend restart preserves the indexed documents and query behaviour. Item-by-item results were reported by the owner and are not recorded in more detail here. It is a local/demo deployment, not production-ready (known limitations in section 6). Stage 5.7 below stays accepted (unchanged).
 
@@ -104,7 +106,7 @@ Results can differ slightly between runs (local model). A fallback where an answ
 
 1. ~~The owner runs the Docker quick start~~ — done: Stage 6 passed manual acceptance on 2026-10-26.
 2. ~~Commit and push Stage 6~~ — done (`feat: complete Stage 6 Docker deployment`).
-3. **Stage 7 (GitHub Actions and the quality gate) only on the owner's explicit instruction**; Stage 8 follows, also on instruction. Preserve the invariants in `CLAUDE.md` (one pipeline; evaluation in temporary stores; layered injection mitigations incl. v8 withholding and the answer check; `/query` contract; dense gate and dense-score order; read-only dashboards; conversation scoping; the Docker invariants: same-origin proxy, own Docker index, host data never mounted, no destructive volume commands).
+3. **Stage 7: the owner reviews the uncommitted changes, then (on explicit instruction only) commits and pushes; the first hosted run, branch protection and a failing run complete the acceptance (section 7).** Stage 8 follows only on explicit instruction. Preserve the invariants in `CLAUDE.md` (one pipeline; evaluation in temporary stores; layered injection mitigations incl. v8 withholding and the answer check; `/query` contract; dense gate and dense-score order; read-only dashboards; conversation scoping; the Docker invariants: same-origin proxy, own Docker index, host data never mounted, no destructive volume commands).
 
 ## 6. Stage 6 — Docker deployment (2026-10-26)
 
@@ -132,3 +134,34 @@ docker compose down                      # stop; volumes (your Docker data) stay
 **Open issues (none blocks local use):** [low] retrieval is not bit-identical across engines/platforms (dense scores agree; lexical last-slot ordering differed for 1/173 and 2/173 benchmark questions, D-078); [low] amd64, Linux/Windows hosts and an in-place volume restore are untested; [low] no TLS/authentication/scaling (local deployment only); [low] the first backend build downloads ≈ 2 GB and the PyTorch CPU wheel from PyTorch's own index.
 
 **Not done (Stage 6 scope):** no commit or push, no GitHub Actions workflow, no UI redesign (three UI sentences/messages changed because they were wrong in a deployed stack).
+
+## 7. Stage 7 — GitHub Actions and the quality gate (2026-10-26; D-079–D-084)
+
+**Run the gate locally** (about 13 s; needs the embedding model in the Hugging Face cache; no Ollama, no `.env`):
+
+```bash
+cd backend
+python -m app.evaluation.quality_gate run --output-dir "$(mktemp -d)"   # exit 0 pass, 1 fail, 2 invalid gate file
+python -m app.evaluation.quality_gate validate-datasets                   # versions + fingerprints only (no model)
+pytest -q --junitxml=junit.xml && python -m app.evaluation.quality_gate junit junit.xml --expected-xfail 1
+```
+
+| What | Where |
+| --- | --- |
+| Workflow | `.github/workflows/ragguard-ci.yml`; shared backend setup `.github/actions/setup-backend/action.yml`; final status `.github/scripts/ci_result.py` |
+| Thresholds (single source) | `evaluation/quality_gate.json` (with the measured baselines and the evidence for them, D-081) |
+| Gate code | `backend/app/evaluation/quality_gate.py`; tests `test_quality_gate.py`, `test_ci_workflow.py`; frontend `lib/api/github.ts`, `test/ciRuns.test.tsx` |
+| Job graph | `backend-checks`, `frontend-checks`, `dataset-validation` → `quality-gate`; `image-build` needs all four (no `if`); `ci-result` (`always()`) is the status to require |
+| Not in CI | Ollama/Gemini, the LLM judge, the full model-based benchmark, `pytest -m ollama`, registry push, deployment |
+
+**Remote steps still to do (only on the owner's instruction; none was done):**
+1. Review and commit the Stage 7 changes; push (or open a pull request). Do not add a remote or push without being asked.
+2. Open the Actions tab: confirm the first run, the step summary (commit, dataset fingerprints, metrics, thresholds), the `quality-gate-report` artifact, and that `image-build` ran only after the others. Note the real run times and whether the embedding-model cache is used on the second run.
+3. Settings → Branches → protect `main`: require the status check **`CI result`** (not the individual jobs), require branches to be up to date, optionally require a pull request. Fork pull requests from first-time contributors need approval to run.
+4. Make a throw-away branch with a deliberately bad change (for example lower `MIN_RETRIEVAL_SCORE` to 0.9 in `backend/app/core/config.py`, or break a test), open a pull request, confirm the gate or check fails, `image-build` is skipped and `CI result` is red; delete the branch. Never merge it.
+5. Reload the Pipeline view (it reads GitHub directly, cached 5 minutes; *Refresh runs* forces a read) and confirm the runs appear with correct outcomes and working links.
+6. Record the results in `PROGRESS_LOG.md` and the Stage 7 acceptance table; only then can Stage 7 be marked complete.
+
+**Open issues:** [medium] the workflow and the `ragguard-*:ci` image builds are untested on GitHub (a typo in an action input would only show there; inputs were checked against the pinned `action.yml` files and `actionlint` is clean); [low] `actions/setup-python` v7.1.0 was released only days before it was pinned (D-084), the owner may prefer an older release; [low] the gate's one-question tolerance is a precaution, not an observed variance (D-081); [low] anonymous GitHub reads allow 60 requests/hour per network, so the UI can show a rate-limit message; [low] the first hosted run downloads the embedding model and the PyTorch CPU wheel (cache keys: pip files, `huggingface-<os>-<model>-v1`); [info] registry and deployment target are open (U-020).
+
+**State left on the machine:** nothing running. Scratch Docker images `ragguard-gate-probe:*` (measurement artifacts) were removed at the end of the session (see `PROGRESS_LOG.md`); the owner's Compose stack was never touched.

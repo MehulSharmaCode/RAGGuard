@@ -3,3 +3,5 @@
 pytest==9.1.1
 ruff==0.17.0
 mypy==2.4.0
+# Parses the GitHub Actions workflow in tests/test_ci_workflow.py (already installed through MLflow).
+PyYAML==6.0.3

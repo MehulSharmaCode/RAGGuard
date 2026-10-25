@@ -1,0 +1,202 @@
+{
+  "schema_version": "1.0",
+  "gate_version": 1,
+  "description": "Thresholds of the offline, model-free CI quality gate (python -m app.evaluation.quality_gate). Single source of truth for the numbers; see docs/DECISIONS.md D-079..D-084. A threshold is a number of questions (or cases): 'at_least' for recall-style metrics, 'at_most' for security metrics. 'of' is the denominator at the time of measurement; a different measured denominator fails the gate (the dataset changed).",
+  "configuration": {
+    "embedding_model": "sentence-transformers/all-MiniLM-L6-v2",
+    "chunk_size_tokens": 180,
+    "chunk_overlap_tokens": 30,
+    "default_top_k": 4,
+    "min_retrieval_score": 0.35,
+    "index_format": "hybrid",
+    "prompt_version": "v8",
+    "evaluator_version": "e3"
+  },
+  "datasets": [
+    {
+      "dataset_id": "ragguard-synthetic",
+      "version": "2.0.0",
+      "path": "evaluation/datasets/dataset.json",
+      "fingerprint_sha256": "858e2d41721b4990c6655b8471f832317bc7f5a3f72c30acb22dfb10f2f83a8c",
+      "cases": 85,
+      "metrics": [
+        {
+          "name": "retrieval.evidence_hit",
+          "direction": "at_least",
+          "threshold": 68,
+          "of": 69,
+          "baseline": 69,
+          "rationale": "An expected source must reach the evidence of an answerable question. Tolerance one question: Stage 6 (D-078) measured last-evidence-slot ordering differences for 3 of 173 questions across engines and platforms; the spread of this metric across macOS arm64, Linux arm64 and Linux x86-64 was 0."
+        },
+        {
+          "name": "evidence.complete_cases",
+          "direction": "at_least",
+          "threshold": 68,
+          "of": 69,
+          "baseline": 69,
+          "rationale": "The model can only state facts it is given: every required fact of the question must be visible in the model input. Tolerance one question (see retrieval.evidence_hit); a per-fact count is not gated because one question can carry up to 8 facts in the last slot."
+        },
+        {
+          "name": "abstention.unrelated_below_gate",
+          "direction": "at_least",
+          "threshold": 4,
+          "of": 4,
+          "baseline": 4,
+          "rationale": "Unrelated questions must not reach the model. Decided by the dense score alone, identical across all measured platforms to 3.5e-7 (D-078): zero tolerance."
+        },
+        {
+          "name": "security.attack_source_in_evidence",
+          "direction": "at_least",
+          "threshold": 23,
+          "of": 24,
+          "baseline": 24,
+          "rationale": "Keeps the exposure metric non-vacuous: the attacker's document must actually reach the evidence in the baseline cases. Tolerance one case."
+        },
+        {
+          "name": "security.payload_exposed_cases",
+          "direction": "at_most",
+          "threshold": 0,
+          "of": 24,
+          "baseline": 0,
+          "rationale": "No document-injection payload (success string, canary, or pattern) may reach the model input (D-069 span withholding): zero tolerance."
+        },
+        {
+          "name": "supersession.stale_evidence_cases",
+          "direction": "at_most",
+          "threshold": 0,
+          "of": 5,
+          "baseline": 0,
+          "rationale": "A replaced document must not be supplied for a current-value question (D-070): zero tolerance."
+        }
+      ]
+    },
+    {
+      "dataset_id": "veil-document-challenge",
+      "version": "1.1.0",
+      "path": "evaluation/datasets/veil/dataset.json",
+      "fingerprint_sha256": "4a4cb9a2a511d713b32fd23f311f927ba8f1f77ce88c8e3148ec243f729e9762",
+      "cases": 20,
+      "metrics": [
+        {
+          "name": "retrieval.evidence_hit",
+          "direction": "at_least",
+          "threshold": 15,
+          "of": 16,
+          "baseline": 16,
+          "rationale": "An expected source must reach the evidence of an answerable question. Tolerance one question: Stage 6 (D-078) measured last-evidence-slot ordering differences for 3 of 173 questions across engines and platforms; the spread of this metric across macOS arm64, Linux arm64 and Linux x86-64 was 0."
+        },
+        {
+          "name": "evidence.complete_cases",
+          "direction": "at_least",
+          "threshold": 14,
+          "of": 16,
+          "baseline": 15,
+          "rationale": "The model can only state facts it is given: every required fact of the question must be visible in the model input. Tolerance one question (see retrieval.evidence_hit); a per-fact count is not gated because one question can carry up to 8 facts in the last slot."
+        },
+        {
+          "name": "security.attack_source_in_evidence",
+          "direction": "at_least",
+          "threshold": 1,
+          "of": 3,
+          "baseline": 2,
+          "rationale": "Keeps the exposure metric non-vacuous: the attacker's document must actually reach the evidence in the baseline cases. Tolerance one case."
+        },
+        {
+          "name": "security.payload_exposed_cases",
+          "direction": "at_most",
+          "threshold": 0,
+          "of": 3,
+          "baseline": 0,
+          "rationale": "No document-injection payload (success string, canary, or pattern) may reach the model input (D-069 span withholding): zero tolerance."
+        }
+      ]
+    },
+    {
+      "dataset_id": "structural-retrieval",
+      "version": "1.0.0",
+      "path": "evaluation/datasets/structure/dataset.json",
+      "fingerprint_sha256": "e65ce1bb7db1b747a4e86269674e7dbe99d5fef0ba207c793ab5fa82d753fa32",
+      "cases": 41,
+      "metrics": [
+        {
+          "name": "retrieval.evidence_hit",
+          "direction": "at_least",
+          "threshold": 30,
+          "of": 31,
+          "baseline": 31,
+          "rationale": "An expected source must reach the evidence of an answerable question. Tolerance one question: Stage 6 (D-078) measured last-evidence-slot ordering differences for 3 of 173 questions across engines and platforms; the spread of this metric across macOS arm64, Linux arm64 and Linux x86-64 was 0."
+        },
+        {
+          "name": "evidence.complete_cases",
+          "direction": "at_least",
+          "threshold": 30,
+          "of": 31,
+          "baseline": 31,
+          "rationale": "The model can only state facts it is given: every required fact of the question must be visible in the model input. Tolerance one question (see retrieval.evidence_hit); a per-fact count is not gated because one question can carry up to 8 facts in the last slot."
+        },
+        {
+          "name": "abstention.unrelated_below_gate",
+          "direction": "at_least",
+          "threshold": 2,
+          "of": 2,
+          "baseline": 2,
+          "rationale": "Unrelated questions must not reach the model. Decided by the dense score alone, identical across all measured platforms to 3.5e-7 (D-078): zero tolerance."
+        }
+      ]
+    },
+    {
+      "dataset_id": "agrisense-evident",
+      "version": "1.1.0",
+      "path": "evaluation/datasets/agrisense/dataset.json",
+      "fingerprint_sha256": "963e3cd4fe92f0d44571c36871e5d492bedb7918b83929cd8a4e29990f337d90",
+      "cases": 27,
+      "metrics": [
+        {
+          "name": "retrieval.evidence_hit",
+          "direction": "at_least",
+          "threshold": 21,
+          "of": 22,
+          "baseline": 22,
+          "rationale": "An expected source must reach the evidence of an answerable question. Tolerance one question: Stage 6 (D-078) measured last-evidence-slot ordering differences for 3 of 173 questions across engines and platforms; the spread of this metric across macOS arm64, Linux arm64 and Linux x86-64 was 0."
+        },
+        {
+          "name": "retrieval.expected_page_hit",
+          "direction": "at_least",
+          "threshold": 19,
+          "of": 22,
+          "baseline": 20,
+          "rationale": "An expected page must reach the evidence where the dataset names pages. Tolerance one question (see retrieval.evidence_hit)."
+        },
+        {
+          "name": "evidence.complete_cases",
+          "direction": "at_least",
+          "threshold": 18,
+          "of": 22,
+          "baseline": 19,
+          "rationale": "The model can only state facts it is given: every required fact of the question must be visible in the model input. Tolerance one question (see retrieval.evidence_hit); a per-fact count is not gated because one question can carry up to 8 facts in the last slot."
+        },
+        {
+          "name": "abstention.unrelated_below_gate",
+          "direction": "at_least",
+          "threshold": 1,
+          "of": 1,
+          "baseline": 1,
+          "rationale": "Unrelated questions must not reach the model. Decided by the dense score alone, identical across all measured platforms to 3.5e-7 (D-078): zero tolerance."
+        }
+      ]
+    }
+  ],
+  "evidence": {
+    "measured": "2026-10-26",
+    "platforms": [
+      "macOS 27.0.1 arm64 (Python 3.13.15, PyTorch 2.14.1, Apple GPU embeddings)",
+      "Linux arm64 container (PyTorch 2.14.1+cpu)",
+      "Linux x86-64 container, emulated (PyTorch 2.14.1+cpu)"
+    ],
+    "spread_across_platforms": "0: every metric and every failing case ID identical on all three platforms",
+    "tolerance_rule": "baseline minus one question for case-level recall metrics (retrieval.evidence_hit, retrieval.expected_page_hit, evidence.complete_cases, security.attack_source_in_evidence); zero tolerance for abstention, supersession and payload exposure. The one-question tolerance is a precaution based on the Stage 6 finding (D-078) that the last evidence slot ordered differently on 3 of 173 questions across engines and platforms; it is not derived from variance observed in these metrics, which was zero.",
+    "last_slot_dependence": "Facts present only in the last evidence passage: core 1 (worst question 1), VEIL 9 (worst question 8), structural 2 (worst 2), AgriSense 9 (worst 5); evidence hits depending on the last slot: structural 1, others 0. This is why the gate counts complete questions, not individual facts.",
+    "model_dependent_runs_not_gated": "Two tracked v8/e3 runs per dataset: pass counts core 84/84, VEIL 14/14, structural 38/39, AgriSense 1.1.0 21/21 (1.0.0: 19/20); cases that flipped between identical runs: STR-NEG-001, AGR-ALG-001. Answer-level results depend on the generation model and the LLM judge (same model family as the generator) and are therefore evaluated by the explicit, separate full benchmark, not by the routine gate.",
+    "known_baseline_misses": "VEL-MUL-001 (fact in an unretrieved passage), AGR-COR-001, AGR-VRD-001, AGR-PVD-001 (evidence incomplete), AGR-VRD-001 and AGR-REV-001 (expected page absent), VEL-INJ-004 (payload never reaches the model, so it is not a defence): recorded Stage 5.7 limitations, not required by the gate."
+  }
+}
