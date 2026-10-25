@@ -1,0 +1,23 @@
+Larkspur Hydrographics - TideWatch T3 Product Specification Sheet
+Document version 2.1, issued March 2025.
+
+Overview
+The TideWatch T3 is a moored water-quality sensor buoy designed for coastal and estuarine monitoring. It measures water temperature, salinity, dissolved oxygen, and turbidity, and transmits its readings to the Larkspur Cloud dashboard.
+
+Physical characteristics
+The buoy hull is 62 centimetres in diameter and weighs 18.5 kilograms without the mooring chain. The hull is made of UV-stabilised polyethylene and is painted signal yellow. The sensor cage is made of marine-grade 316 stainless steel.
+
+Operating limits
+The submerged sensor head is rated for continuous operation at depths of up to 300 metres. The operating water temperature range is -2 to 35 degrees Celsius. The buoy should not be deployed in locations where ice cover is expected to last longer than 14 days.
+
+Power and battery
+The T3 uses a 12-volt lithium iron phosphate battery pack with a capacity of 40 ampere-hours. With the default sampling interval, a fully charged pack lasts approximately 21 days without solar input. The optional 20-watt solar panel extends autonomy indefinitely in most temperate locations.
+
+Sampling and communication
+The default sampling interval is 10 minutes and can be configured between 1 minute and 6 hours. Readings are transmitted over LTE-M. Where no cellular coverage is available, the Iridium satellite module (sold separately) can be used instead. Data is buffered on the buoy for up to 90 days if transmission fails.
+
+Calibration and maintenance
+The dissolved-oxygen sensor must be recalibrated every 60 days. The anti-fouling wiper on the sensor head should be replaced every 6 months. Larkspur recommends a full service inspection once per year.
+
+Warranty
+The TideWatch T3 carries a 3-year limited warranty covering manufacturing defects. Damage caused by collisions with vessels or by improper mooring is not covered by the warranty.

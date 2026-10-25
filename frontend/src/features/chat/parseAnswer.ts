@@ -4,19 +4,23 @@
  * Citation markers: the backend labels the evidence it supplied as S1..Sn and
  * the model references them as "[S1]". A marker becomes interactive only when
  * that ID exists in the response's `sources`; anything else stays plain text.
+ * Consecutive markers ("[S1][S2]", "[S1], [S2]") form one citation group, rendered as
+ * "[S1, S2]", so adjacent labels never run together as "S1S2" on screen or when copied.
  * The UI never creates citations of its own.
  */
 
 export type Segment =
   | { type: "text"; text: string }
   | { type: "strong"; text: string }
-  | { type: "cite"; sourceId: string };
+  | { type: "cite"; sourceIds: string[] };
 
 export type Block =
   | { type: "paragraph"; segments: Segment[]; interpretation: boolean }
   | { type: "list"; ordered: boolean; items: Segment[][] };
 
 const TOKEN = /\[(S\d+)\]|\*\*(.+?)\*\*/g;
+// Only whitespace or a comma may separate two markers of the same group.
+const GROUP_GAP = /^[\s,]*$/;
 const BULLET = /^\s*[-*•]\s+/;
 const NUMBERED = /^\s*\d+[.)]\s+/;
 const INTERPRETATION = /^Interpretation:\s*/i;
@@ -31,11 +35,22 @@ export function parseSegments(text: string, sourceIds: ReadonlySet<string>): Seg
   let last = 0;
   for (const match of text.matchAll(TOKEN)) {
     const index = match.index ?? 0;
-    if (index > last) pushText(text.slice(last, index));
     if (match[1] !== undefined) {
-      if (sourceIds.has(match[1])) segments.push({ type: "cite", sourceId: match[1] });
-      else pushText(match[0]);
+      if (sourceIds.has(match[1])) {
+        const previous = segments.at(-1);
+        const gap = text.slice(last, index);
+        if (previous?.type === "cite" && GROUP_GAP.test(gap)) {
+          if (!previous.sourceIds.includes(match[1])) previous.sourceIds.push(match[1]);
+        } else {
+          if (index > last) pushText(gap);
+          segments.push({ type: "cite", sourceIds: [match[1]] });
+        }
+      } else {
+        if (index > last) pushText(text.slice(last, index));
+        pushText(match[0]);
+      }
     } else {
+      if (index > last) pushText(text.slice(last, index));
       segments.push({ type: "strong", text: match[2] ?? "" });
     }
     last = index + match[0].length;

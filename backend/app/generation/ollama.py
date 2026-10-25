@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import logging
 import re
+from typing import Any
 
 import httpx
 
@@ -30,10 +31,16 @@ class OllamaProvider:
         *,
         timeout_seconds: float,
         temperature: float,
+        seed: int | None = None,
+        response_format: str | dict[str, Any] | None = None,
         transport: httpx.BaseTransport | None = None,
     ) -> None:
+        """`seed` and `response_format` (Ollama `format`: "json" or a JSON schema) are
+        optional; the answer-generation provider leaves both unset."""
         self.model = model
         self._temperature = temperature
+        self._seed = seed
+        self._response_format = response_format
         self._client = httpx.Client(
             base_url=base_url.rstrip("/"),
             timeout=httpx.Timeout(timeout_seconds, connect=5.0),
@@ -54,7 +61,10 @@ class OllamaProvider:
         )
 
     def generate(self, system_prompt: str, user_prompt: str) -> str:
-        payload = {
+        options: dict[str, Any] = {"temperature": self._temperature}
+        if self._seed is not None:
+            options["seed"] = self._seed
+        payload: dict[str, Any] = {
             "model": self.model,
             "messages": [
                 {"role": "system", "content": system_prompt},
@@ -62,8 +72,10 @@ class OllamaProvider:
             ],
             "stream": False,
             "think": False,
-            "options": {"temperature": self._temperature},
+            "options": options,
         }
+        if self._response_format is not None:
+            payload["format"] = self._response_format
         try:
             response = self._client.post("/api/chat", json=payload)
         except httpx.TimeoutException as exc:

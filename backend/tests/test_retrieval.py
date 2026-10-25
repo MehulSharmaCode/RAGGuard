@@ -7,6 +7,7 @@ import uuid
 from pathlib import Path
 
 import pytest
+from qdrant_client import QdrantClient, models
 
 from app.core.config import Settings
 from app.core.errors import ConfigurationError, VectorStoreError
@@ -53,7 +54,7 @@ def _index(
     texts: list[tuple[int | None, str]],
 ) -> list[Chunk]:
     chunks = _chunks(texts)
-    vectors = embedder.embed_documents([c.text for c in chunks])
+    vectors = [[v] for v in embedder.embed_documents([c.text for c in chunks])]
     store.upsert_chunks(record, chunks, vectors, embedder.dimension)
     return chunks
 
@@ -137,6 +138,27 @@ def test_search_filters_by_document_ids(
     assert {r.document_id for r in both} == {doc_a.document_id, doc_b.document_id}
 
 
+def test_hybrid_search_never_leaves_the_document_filter(
+    vector_store: QdrantVectorStore, embedder: FakeEmbedder
+) -> None:
+    # The other document is the stronger semantic and lexical match; neither the lexical
+    # candidates nor the closest-below-threshold fill may bring it into a scoped result.
+    scoped, other = _record("scoped.pdf"), _record("other.pdf")
+    _index(vector_store, embedder, scoped, [(1, "harbour opening hours")])
+    _index(vector_store, embedder, other, [(1, "booking boats booking boats 48 hours")])
+    question = "booking boats 48 hours"
+    for min_score in (-1.0, 0.99):
+        results = vector_store.search(
+            embedder.embed_query(question),
+            4,
+            embedder.dimension,
+            [scoped.document_id],
+            query_text=question,
+            min_score=min_score,
+        )
+        assert results and {r.document_id for r in results} == {scoped.document_id}
+
+
 def test_search_before_any_ingest_returns_empty(
     vector_store: QdrantVectorStore, embedder: FakeEmbedder
 ) -> None:
@@ -194,7 +216,202 @@ def test_local_and_remote_modes_are_exclusive(tmp_path: Path) -> None:
     assert QdrantVectorStore.from_settings(remote).is_local is False
 
 
+# --- sub-unit index and legacy collections (D-063) ------------------------------
+def test_chunk_score_is_its_best_matching_subunit(
+    vector_store: QdrantVectorStore, embedder: FakeEmbedder
+) -> None:
+    text = "Tier limits table. Starter has fifty gigabytes. Team has two terabytes."
+    chunk = Chunk(0, 1, text, 0, len(text), 12, units=("Team has two terabytes",))
+    vectors = [embedder.embed_documents([text, "Team has two terabytes"])]
+    vector_store.upsert_chunks(_record(), [chunk], vectors, embedder.dimension)
+
+    query = embedder.embed_query("team terabytes")
+    [hit] = vector_store.search(query, 3, embedder.dimension)
+    whole = sum(a * b for a, b in zip(query, vectors[0][0], strict=True))
+    unit = sum(a * b for a, b in zip(query, vectors[0][1], strict=True))
+    assert unit > whole
+    assert math.isclose(hit.score, unit, rel_tol=1e-4)
+    assert hit.text == text  # the whole chunk stays the evidence passage
+    assert vector_store.check_health()["index_format"] == "hybrid"
+    assert [d.chunk_count for d in vector_store.list_documents()] == [1]
+
+
+def _legacy_collection(settings: Settings, embedder: FakeEmbedder, points: int) -> None:
+    client = QdrantClient(path=str(settings.qdrant_local_path))
+    client.create_collection(
+        settings.qdrant_collection_name,
+        vectors_config=models.VectorParams(
+            size=embedder.dimension, distance=models.Distance.COSINE
+        ),
+    )
+    for i in range(points):
+        client.upsert(
+            settings.qdrant_collection_name,
+            points=[
+                models.PointStruct(
+                    id=point_id_for("old-doc", i),
+                    vector=embedder.embed_documents(["old penguin notes"])[0],
+                    payload={
+                        "document_id": "old-doc",
+                        "filename": "old.txt",
+                        "file_type": "txt",
+                        "total_pages": None,
+                        "ingested_at": "2026-10-01T00:00:00+00:00",
+                        "page_number": None,
+                        "chunk_index": i,
+                        "text": "old penguin notes",
+                        "char_start": 0,
+                        "char_end": 17,
+                    },
+                )
+            ],
+        )
+    client.close()
+
+
+def test_legacy_collection_keeps_documents_and_stays_searchable(
+    settings: Settings, embedder: FakeEmbedder
+) -> None:
+    _legacy_collection(settings, embedder, points=1)
+    store = QdrantVectorStore.from_settings(settings)
+    try:
+        assert store.check_health()["index_format"] == "legacy"
+        assert store.search(embedder.embed_query("penguin"), 3, embedder.dimension)[0].text == (
+            "old penguin notes"
+        )
+        new = Chunk(0, None, "new walrus notes", 0, 16, 3, units=("walrus notes here",))
+        vectors = [embedder.embed_documents(["new walrus notes", "walrus notes here"])]
+        store.upsert_chunks(_record("new.txt", "txt"), [new], vectors, embedder.dimension)
+        assert store.check_health() == {
+            "collection_exists": True, "points": 2, "index_format": "legacy"
+        }  # fmt: skip
+        assert {d.filename for d in store.list_documents()} == {"old.txt", "new.txt"}
+    finally:
+        store.close()
+
+
+def test_empty_legacy_collection_is_recreated_as_hybrid_index(
+    settings: Settings, embedder: FakeEmbedder
+) -> None:
+    _legacy_collection(settings, embedder, points=0)
+    store = QdrantVectorStore.from_settings(settings)
+    try:
+        assert store.check_health()["index_format"] == "legacy"
+        _index(store, embedder, _record(), [(1, "penguins are birds")])
+        assert store.check_health()["index_format"] == "hybrid"
+    finally:
+        store.close()
+
+
 # --- evidence check --------------------------------------------------------------
+# --- hybrid index (D-064) ----------------------------------------------------------
+def test_lexical_ranking_promotes_exact_terms_but_scores_stay_dense(
+    vector_store: QdrantVectorStore, embedder: FakeEmbedder
+) -> None:
+    texts = [(1, f"filler topic number {i} about harbours and ships") for i in range(8)]
+    texts.append((2, "harbours ships summary; application state machine DRAFT READY_TO_SUBMIT"))
+    _index(vector_store, embedder, _record(), texts)
+    question = "harbours ships application state machine"
+    query = embedder.embed_query(question)
+    dense_only = vector_store.search(query, 2, embedder.dimension)
+    hybrid = vector_store.search(query, 2, embedder.dimension, query_text=question, min_score=-1.0)
+    assert any("state machine" in c.text for c in hybrid)
+    for chunk in hybrid + dense_only:  # the reported score is always the dense cosine
+        assert -1.0 <= chunk.score <= 1.0 + 1e-6
+    by_text = {c.text: c.score for c in dense_only + hybrid}
+    assert len(by_text) == len({c.text for c in dense_only + hybrid})
+
+
+def test_hybrid_search_prefers_chunks_above_the_gate(
+    vector_store: QdrantVectorStore, embedder: FakeEmbedder
+) -> None:
+    _index(
+        vector_store,
+        embedder,
+        _record(),
+        [(1, "penguins swim in cold water"), (1, "volcano lava eruption penguins"), (2, "weather")],
+    )
+    question = "penguins swim cold water"
+    query = embedder.embed_query(question)
+    results = vector_store.search(query, 2, embedder.dimension, query_text=question, min_score=0.5)
+    assert results[0].text == "penguins swim in cold water"
+    assert results[0].score >= 0.5
+    assert all(r.score < 0.5 for r in results[1:])  # below-gate chunks only fill up the list
+
+
+def test_hybrid_evidence_is_presented_in_dense_score_order(
+    vector_store: QdrantVectorStore, embedder: FakeEmbedder
+) -> None:
+    texts = [(1, f"harbour ships filler topic {i}") for i in range(6)]
+    texts.append((1, "harbour ships booking procedure booking booking"))
+    _index(vector_store, embedder, _record(), texts)
+    question = "harbour ships booking"
+    results = vector_store.search(
+        embedder.embed_query(question), 4, embedder.dimension, query_text=question, min_score=-1.0
+    )
+    scores = [r.score for r in results]
+    assert scores == sorted(scores, reverse=True)
+
+
+def test_subunit_collection_from_d063_keeps_working(
+    settings: Settings, embedder: FakeEmbedder
+) -> None:
+    client = QdrantClient(path=str(settings.qdrant_local_path))
+    client.create_collection(
+        settings.qdrant_collection_name,
+        vectors_config=models.VectorParams(
+            size=embedder.dimension,
+            distance=models.Distance.COSINE,
+            multivector_config=models.MultiVectorConfig(
+                comparator=models.MultiVectorComparator.MAX_SIM
+            ),
+        ),
+    )
+    client.upsert(
+        settings.qdrant_collection_name,
+        points=[
+            models.PointStruct(
+                id=point_id_for("old-doc", 0),
+                vector=embedder.embed_documents(["walrus notes"]),
+                payload={
+                    "document_id": "old-doc",
+                    "filename": "old.txt",
+                    "chunk_index": 0,
+                    "text": "walrus notes",
+                    "ingested_at": "2026-10-16T00:00:00+00:00",
+                },
+            )
+        ],
+    )
+    client.close()
+    store = QdrantVectorStore.from_settings(settings)
+    try:
+        _index(store, embedder, _record(), [(1, "penguins are birds")])
+        assert store.check_health()["index_format"] == "subunit"
+        assert {d.filename for d in store.list_documents()} == {"old.txt", "doc.pdf"}
+        hits = store.search(
+            embedder.embed_query("penguins"), 3, embedder.dimension, query_text="penguins"
+        )
+        assert hits[0].text == "penguins are birds"
+    finally:
+        store.close()
+
+
+def test_lexical_helpers() -> None:
+    from app.retrieval.lexical import (
+        document_vector,
+        query_vector,
+        reciprocal_rank_fusion,
+        tokens,
+    )
+
+    assert tokens("What is the READY_TO_SUBMIT state?") == ["ready_to_submit", "state"]
+    indices, values = document_vector("state state machine")
+    assert len(indices) == 2 and all(v > 0 for v in values)
+    assert query_vector("the a of")[0] == []  # stopwords only: no lexical query
+    assert reciprocal_rank_fusion(["a", "b"], ["b", "c"])[0] == "b"
+
+
 def _hit(score: float) -> RetrievedChunk:
     return RetrievedChunk("p", score, "d", "f.txt", None, 0, "t", 0, 1)
 

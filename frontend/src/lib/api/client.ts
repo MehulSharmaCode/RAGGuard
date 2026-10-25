@@ -11,7 +11,7 @@ export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localh
   "",
 );
 
-export type ApiErrorKind = "network" | "timeout" | "http" | "malformed" | "aborted";
+export type ApiErrorKind = "network" | "timeout" | "http" | "malformed" | "aborted" | "interrupted";
 
 export class ApiError extends Error {
   readonly kind: ApiErrorKind;

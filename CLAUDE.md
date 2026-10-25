@@ -8,7 +8,8 @@ These rules are mandatory for every Claude Code session working in this reposito
 
 1. Read, in this order:
    - `CLAUDE.md` (this file)
-   - `docs/PROJECT_CONTEXT.md` — concise current state, including its "Next Session Handoff" section
+   - `docs/SESSION_HANDOFF.md` — the current handoff (status, open issues, manual acceptance, next steps)
+   - `docs/PROJECT_CONTEXT.md` — concise current state
    - `docs/ROADMAP.md` — stage status and completion criteria
    - `docs/DECISIONS.md` — confirmed, planned, and unresolved decisions
    - the most recent entries of `docs/PROGRESS_LOG.md`
@@ -33,15 +34,21 @@ These rules are mandatory for every Claude Code session working in this reposito
     - `PROGRESS_LOG.md` — chronological history (append-only; never rewrite or invent past entries)
     Avoid conflicting copies of the same information; link instead of duplicating.
 11. **Git hygiene.** Do not add remotes, commit, or push unless explicitly asked.
-12. **Isolated verification.** Automated tests must not call Gemini or require a running Ollama (the real-Ollama test is opt-in: `pytest -m ollama`). Smoke tests and scripts use a temporary `QDRANT_LOCAL_PATH` and collection, never the developer's `qdrant_storage/`; embedded Qdrant allows only one process per storage folder.
+12. **Isolated verification.** Automated tests must not call Gemini or require a running Ollama (the real-Ollama test is opt-in: `pytest -m ollama`) or an MLflow server (use a temporary SQLite tracking URI). Smoke tests and scripts use a temporary `QDRANT_LOCAL_PATH` and collection, never the developer's `qdrant_storage/`; embedded Qdrant allows only one process per storage folder. Real evaluation runs log to the local `mlflow.db`; never log secrets or `.env` values to MLflow (parameters are whitelisted in `backend/app/tracking/mlflow_tracking.py`). The API's dashboard endpoints only read the tracking store and `evaluation/results/` (`tracking/reader.py`, `evaluation/results.py`): never write to, delete from, or create a store from the API, never import MLflow on the query path, and never return secrets, unwhitelisted tags, or absolute paths. Dashboard tests use temporary results directories and tracking stores.
+13. **Frontend scope (D-046, amended by D-053).** Stage 5.5 lifted the freeze for functional integration: the conversation provider and the Evaluation, Experiments, and Pipeline views exist and may be maintained or fixed in the **current** design language (tokens, shell, Evidence Trace, themes, accessibility). The larger **visual redesign** — new visual direction, restyling, new screens beyond these views, or new frontend dependencies — stays deferred until the owner supplies visual references and asks for it. Backend work must keep the frontend operational, and the frontend must show only real data.
 
 ## Architecture invariants
 
 - The **live query path** (user question → retrieval → generation → cited answer or safe fallback) and the **evaluation path** (fixed dataset → pipeline → metrics) share the same RAG pipeline code. Evaluation never runs per user query.
+- The evaluation runner (`backend/app/evaluation/`) calls `RAGPipeline.ingest` / `retrieve_evidence` / `generate_answer` and indexes its corpus only into a temporary Qdrant store it creates and deletes; it never re-implements retrieval or generation and never opens the application's store.
 - The **release path** (code change → GitHub Actions → tests + evaluation gate → image build/release) blocks *new* releases on failure; it must not take down the currently healthy deployment.
 - Answers must cite sources (document and page where available). When evidence is insufficient, return the documented safe fallback instead of guessing.
 - An LLM judge is a supplementary evaluator, never the sole source of truth.
+- Retrieved documents and user questions are untrusted input. Keep the layered prompt-injection mitigations (`ARCHITECTURE.md` §3c, D-049, D-069, D-071 — including span withholding and the answer check with at most one repair); do not remove a layer or claim immunity based on passing synthetic tests. An answer is returned as grounded only if it passes the answer check; supersession is decided only from explicit replacement statements inside the selected documents (D-070). Keep the `/query` response contract unchanged unless the frontend is changed with it (its validator accepts only the three existing `fallback_reason` values).
 - Quality thresholds are set only after a measured baseline exists, and live in version control.
+- Deterministic checks are versioned (`EVALUATOR_VERSION` in `backend/app/evaluation/metrics.py`, D-068): any change to how a case is scored bumps it and is described with a re-scoring comparison; earlier reports are never rewritten, and a benchmark's content changes only with a version bump.
+- Retrieval improvements stay general (D-063): no rules tied to a filename, document, page, heading, or question, and no forced inclusion of a passage. The retrieval threshold only has meaning for one score definition — any change to extraction, chunking, sub-units, the index, or the embedding model requires re-calibrating `MIN_RETRIEVAL_SCORE` on answerable, unanswerable, and unrelated questions of all four benchmarks (core, VEIL, structural, AgriSense). Lexical (hybrid) retrieval may only choose among chunks whose dense score passes the gate, and evidence is presented in dense-score order (D-064); region merging (D-072) may extend a passage's text but never changes scores, order, the gate, or the passage count. Never drop or silently replace an indexed collection that holds documents; older index formats must keep working until the owner re-uploads.
+- Conversations are scoped to a document context (D-065): never show a thread as belonging to documents it was not held with, never delete a thread without the user's confirmation, and never send conversation history to the backend without an explicit, scoped design. The retrieval diagnostics endpoint (D-066) stays opt-in, read-only, and absent from the API by default.
 - Frontend, 3D assets, and visualization code stay separate from backend logic.
 
 ## UI quality requirement (non-negotiable)

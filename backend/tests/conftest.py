@@ -149,6 +149,9 @@ def settings(tmp_path: Path) -> Settings:
         default_top_k=4,
         max_upload_size_mb=1,
         min_retrieval_score=0.3,
+        # Dashboards read only temporary locations in tests (never the repo's results/store).
+        evaluation_results_dir=tmp_path / "results",
+        mlflow_tracking_uri=f"sqlite:///{tmp_path / 'mlflow' / 'mlflow.db'}",
     )
 
 

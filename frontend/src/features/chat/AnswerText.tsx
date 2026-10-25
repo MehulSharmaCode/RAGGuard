@@ -19,24 +19,34 @@ function Segments({
       {segments.map((segment, i) => {
         if (segment.type === "text") return <Fragment key={i}>{segment.text}</Fragment>;
         if (segment.type === "strong") return <strong key={i} className="font-semibold">{segment.text}</strong>;
-        const source = sources.get(segment.sourceId)!;
-        const selected = selectedSourceId === segment.sourceId;
+        // One superscript group per run of adjacent markers: "[S1, S2]". The brackets and
+        // separators are text, so copying the answer keeps readable citations.
         return (
-          <button
-            key={i}
-            type="button"
-            onClick={() => onCite(segment.sourceId)}
-            aria-pressed={selected}
-            aria-label={`Source ${segment.sourceId}: ${source.filename}, ${pageLabel(source.page_number)}`}
-            title={`${source.filename} · ${pageLabel(source.page_number)}`}
-            className={`mx-0.5 inline-flex -translate-y-1 items-center rounded-xs border px-1 align-baseline font-mono text-12 leading-4 transition-colors duration-150 ${
-              selected
-                ? "border-accent-500 bg-accent-300 text-on-accent"
-                : "border-paper-300 bg-paper-200 text-ink-700 hover:border-accent-500"
-            }`}
-          >
-            {segment.sourceId}
-          </button>
+          <sup key={i} className="mx-0.5 font-mono text-12 leading-none whitespace-nowrap text-ink-500">
+            [
+            {segment.sourceIds.map((id, j) => {
+              const source = sources.get(id)!;
+              const selected = selectedSourceId === id;
+              return (
+                <Fragment key={id}>
+                  {j > 0 && ", "}
+                  <button
+                    type="button"
+                    onClick={() => onCite(id)}
+                    aria-pressed={selected}
+                    aria-label={`Source ${id}: ${source.filename}, ${pageLabel(source.page_number)}`}
+                    title={`${source.filename} · ${pageLabel(source.page_number)}`}
+                    className={`rounded-xs px-0.5 underline decoration-dotted underline-offset-2 transition-colors duration-150 ${
+                      selected ? "bg-accent-300 text-on-accent" : "text-accent-800 hover:bg-paper-200"
+                    }`}
+                  >
+                    {id}
+                  </button>
+                </Fragment>
+              );
+            })}
+            ]
+          </sup>
         );
       })}
     </>

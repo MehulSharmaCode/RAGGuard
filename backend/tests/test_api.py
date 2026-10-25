@@ -18,7 +18,7 @@ from app.core.errors import (
 from app.generation.base import ProviderStatus
 from app.generation.gemini import GeminiProvider
 from app.generation.ollama import OllamaProvider
-from app.generation.prompts import FALLBACK_ANSWER, SYSTEM_PROMPT
+from app.generation.prompts import FALLBACK_ANSWER, PROMPT_VERSION, SYSTEM_PROMPT
 from app.main import build_pipeline, create_app
 from tests.conftest import FREEDONIA_TXT, ORBIT_PAGES, FakeProvider, make_pdf
 
@@ -153,7 +153,11 @@ def test_query_returns_answer_with_genuine_sources(
     assert body["answerable"] is True
     assert body["fallback_reason"] is None
     assert body["answer"] == provider.answer
-    assert body["generation"] == {"provider": "fake", "model": "fake-model", "prompt_version": "v1"}
+    assert body["generation"] == {
+        "provider": "fake",
+        "model": "fake-model",
+        "prompt_version": PROMPT_VERSION,
+    }
 
     sources = body["sources"]
     assert sources, "an answered query must carry sources"
@@ -195,12 +199,17 @@ def test_query_pdf_sources_carry_page_numbers(client: TestClient, provider: Fake
     assert top["page_number"] == 3
 
 
-def test_uncited_sources_are_marked(client: TestClient, provider: FakeProvider) -> None:
+def test_uncited_answer_is_regenerated_once_then_withheld(
+    client: TestClient, provider: FakeProvider
+) -> None:
+    # U-019 / D-071: an answer without any [Sn] citation is not returned as grounded.
     _ingest_txt(client)
-    provider.answer = "Fredville, founded in 1820."
+    provider.answer = "Fredville is the capital."
     body = client.post("/query", json={"question": "capital of Freedonia Fredville"}).json()
-    assert body["status"] == "answered"
-    assert all(s["cited"] is False for s in body["sources"])
+    assert (body["status"], body["fallback_reason"]) == ("insufficient_evidence", "model_declined")
+    assert body["sources"] == [] and body["generation"]["prompt_version"] == "v8"
+    assert len(provider.calls) == 2, "exactly one repair attempt"
+    assert "cited no evidence passage" in provider.calls[1][1]
 
 
 def test_query_document_filter(client: TestClient, provider: FakeProvider) -> None:
@@ -217,6 +226,23 @@ def test_query_document_filter(client: TestClient, provider: FakeProvider) -> No
     assert body["status"] == "insufficient_evidence"
     assert provider.calls == []
     assert all(s["document_id"] == pdf["document_id"] for s in body["sources"])
+
+
+def test_query_scoped_to_deleted_or_unknown_document_finds_no_evidence(
+    client: TestClient, provider: FakeProvider
+) -> None:
+    # A conversation can outlive its documents: its scope must never fall back to "all".
+    removed = _ingest_txt(client)
+    _ingest_pdf(client)
+    assert client.delete(f"/documents/{removed['document_id']}").status_code == 200
+    _ingest_txt(client)  # the same text again, under a new document ID
+    for scope in ([removed["document_id"]], ["00000000-0000-4000-8000-000000000000"]):
+        body = client.post(
+            "/query", json={"question": "What is the capital of Freedonia?", "document_ids": scope}
+        ).json()
+        assert body["status"] == "insufficient_evidence"
+        assert body["sources"] == []
+    assert provider.calls == []
 
 
 def test_query_top_k_override(client: TestClient) -> None:

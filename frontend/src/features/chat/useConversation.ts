@@ -1,6 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
-import { ApiError } from "../../lib/api/client";
-import { queryDocuments } from "../../lib/api/endpoints";
+import { createContext, useContext } from "react";
+import type { ApiError } from "../../lib/api/client";
 import type { QueryResponse } from "../../types/api";
 
 export type TurnState =
@@ -17,64 +16,83 @@ export interface Turn {
   state: TurnState;
 }
 
-let nextId = 0;
+export interface Selection {
+  turnId: string | null;
+  sourceId: string | null;
+}
 
-/** In-memory question/answer thread for this browser session (not persisted). */
-export function useConversation() {
-  const [turns, setTurns] = useState<Turn[]>([]);
-  const controllers = useRef(new Set<AbortController>());
+/** Where the conversation is kept: this tab's session storage, or memory only (storage blocked). */
+export type Persistence = "session" | "memory";
 
-  useEffect(() => {
-    const active = controllers.current;
-    return () => active.forEach((c) => c.abort());
-  }, []);
+/**
+ * The document context a conversation belongs to. `signature` is stable for the same
+ * context: the selected document IDs, or, when questions go to all documents, the IDs of
+ * every indexed document (so an upload or a removal is a different context).
+ */
+export interface ScopeContext {
+  signature: string;
+  /** Selected document IDs, or null for all indexed documents. */
+  scope: string[] | null;
+  /** Human-readable description, e.g. "All documents: a.pdf, b.txt". */
+  label: string;
+}
 
-  const run = useCallback(async (turn: Turn) => {
-    const controller = new AbortController();
-    controllers.current.add(controller);
-    try {
-      const response = await queryDocuments(
-        { question: turn.question, ...(turn.scope ? { document_ids: turn.scope } : {}) },
-        controller.signal,
-      );
-      setTurns((all) => all.map((t) => (t.id === turn.id ? { ...t, state: { kind: "done", response } } : t)));
-    } catch (err) {
-      const error =
-        err instanceof ApiError ? err : new ApiError("malformed", "Unexpected error while asking.");
-      if (error.kind === "aborted") return;
-      setTurns((all) => all.map((t) => (t.id === turn.id ? { ...t, state: { kind: "failed", error } } : t)));
-    } finally {
-      controllers.current.delete(controller);
-    }
-  }, []);
+export interface Thread {
+  id: string;
+  signature: string;
+  scope: string[] | null;
+  label: string;
+  createdAt: string;
+  updatedAt: string;
+  turns: Turn[];
+  selection: Selection;
+}
 
-  const ask = useCallback(
-    (question: string, scope: string[] | null, scopeNames: string[]): string => {
-      const turn: Turn = {
-        id: `turn-${++nextId}`,
-        question,
-        scope,
-        scopeNames,
-        state: { kind: "pending" },
-      };
-      setTurns((all) => [...all, turn]);
-      void run(turn);
-      return turn.id;
-    },
-    [run],
-  );
+export interface ThreadSummary {
+  id: string;
+  label: string;
+  questionCount: number;
+  updatedAt: string;
+  /** True when the thread belongs to the current document context. */
+  current: boolean;
+}
 
-  const retry = useCallback(
-    (turnId: string) => {
-      const turn = turns.find((t) => t.id === turnId);
-      if (!turn || turn.state.kind !== "failed") return;
-      const pending: Turn = { ...turn, state: { kind: "pending" } };
-      setTurns((all) => all.map((t) => (t.id === turnId ? pending : t)));
-      void run(pending);
-    },
-    [turns, run],
-  );
+export interface ConversationValue {
+  /** Turns of the conversation on screen. */
+  turns: Turn[];
+  /** True while any conversation (not only the one on screen) waits for an answer. */
+  pending: boolean;
+  ask: (question: string, scope: string[] | null, scopeNames: string[]) => string;
+  retry: (turnId: string) => void;
+  /** Deletes the conversation on screen (other conversations are kept). */
+  clear: () => void;
+  /** All conversations of this tab, newest first. */
+  threads: ThreadSummary[];
+  /** The conversation on screen; null is a new, still empty conversation. */
+  activeThreadId: string | null;
+  /** The conversation on screen belongs to another document context (history view). */
+  readOnly: boolean;
+  /** Description of the documents the conversation on screen was held with. */
+  activeLabel: string | null;
+  /** Scope of the conversation on screen (to restore it), or null. */
+  activeScope: string[] | null;
+  openThread: (threadId: string) => void;
+  /** Starts an empty conversation for the current document context. */
+  newThread: () => void;
+  /** Reported by the Workspace whenever the effective document context may have changed. */
+  setScopeContext: (context: ScopeContext) => void;
+  selection: Selection;
+  select: (selection: Selection) => void;
+  scopeIds: ReadonlySet<string>;
+  setScopeIds: (update: (current: ReadonlySet<string>) => ReadonlySet<string>) => void;
+  persistence: Persistence;
+}
 
-  const pending = turns.some((t) => t.state.kind === "pending");
-  return { turns, ask, retry, pending };
+export const ConversationContext = createContext<ConversationValue | null>(null);
+
+/** The app-level conversations (ConversationProvider): survive navigation between views. */
+export function useConversation(): ConversationValue {
+  const value = useContext(ConversationContext);
+  if (value === null) throw new Error("useConversation must be used inside <ConversationProvider>.");
+  return value;
 }

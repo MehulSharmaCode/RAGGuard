@@ -13,6 +13,8 @@ export type Route = Spec | "network-error" | "pending" | Handler;
 export interface Call {
   method: string;
   path: string;
+  /** Query string including "?", or "" (routes are matched on the path only). */
+  search: string;
   init: RequestInit | undefined;
 }
 
@@ -26,7 +28,7 @@ export function mockApi(routes: Record<string, Route | Route[]>) {
     const url = new URL(String(input));
     const method = init?.method ?? "GET";
     const key = `${method} ${url.pathname}`;
-    calls.push({ method, path: url.pathname, init });
+    calls.push({ method, path: url.pathname, search: url.search, init });
     const entry = routes[key];
     const route = Array.isArray(entry) ? (entry.length > 1 ? entry.shift() : entry[0]) : entry;
     if (route === undefined) throw new Error(`Unmocked request: ${key}`);

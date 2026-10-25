@@ -1,0 +1,4 @@
+Larkspur Field Sampling Protocol - Version 2
+Effective 1 May 2025. This version replaces version 1 of the protocol.
+
+Collect a duplicate water sample at every 3rd station so that laboratory precision can be checked. Duplicates must be labelled with the suffix D.

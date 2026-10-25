@@ -4,8 +4,9 @@
  * < lg: one column with section switcher (Documents · Ask · Evidence).
  */
 
-import { RotateCw, Upload } from "lucide-react";
+import { History, Plus, RotateCw, Trash2, Upload } from "lucide-react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { fieldClass } from "../components/data/Section";
 import { Button } from "../components/ui/Button";
 import { InlineAlert } from "../components/ui/InlineAlert";
 import { EvidencePanel } from "../features/chat/EvidencePanel";
@@ -13,12 +14,12 @@ import { QuestionInput } from "../features/chat/QuestionInput";
 import { EvidenceTrace } from "../features/chat/trace/EvidenceTrace";
 import { FirstRunIllustration } from "../features/chat/trace/FirstRunIllustration";
 import { TurnView } from "../features/chat/TurnView";
-import { useConversation } from "../features/chat/useConversation";
+import { useConversation, type Persistence, type ThreadSummary } from "../features/chat/useConversation";
 import { DocumentList } from "../features/documents/DocumentList";
 import { UploadZone } from "../features/documents/UploadZone";
 import { useDocuments, useUpload } from "../features/documents/useDocuments";
 import { useMediaQuery } from "../lib/browser";
-import { plural } from "../lib/format";
+import { formatDateTime, plural } from "../lib/format";
 import { maxUploadMb, type HealthState } from "./useHealth";
 
 type Section = "documents" | "ask" | "evidence";
@@ -36,10 +37,12 @@ export function Workspace({ health }: { health: HealthState }) {
 
   const [section, setSection] = useState<Section>("ask");
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [scopeIds, setScopeIds] = useState<ReadonlySet<string>>(new Set());
-  const [selectedTurnId, setSelectedTurnId] = useState<string | null>(null);
-  const [selectedSourceId, setSelectedSourceId] = useState<string | null>(null);
+  const [confirmClear, setConfirmClear] = useState(false);
   const [traceTurnId, setTraceTurnId] = useState<string | null>(null);
+  // Thread, selected citation, and scope live in ConversationProvider (survive navigation).
+  const { scopeIds, setScopeIds, selection, select } = conversation;
+  const selectedTurnId = selection.turnId;
+  const selectedSourceId = selection.sourceId;
   const pickerRef = useRef<HTMLInputElement>(null);
   const threadEndRef = useRef<HTMLDivElement>(null);
 
@@ -60,6 +63,24 @@ export function Workspace({ health }: { health: HealthState }) {
   }, [scopeIds, documents]);
   const scopeNames = (documents ?? []).filter((d) => scope.has(d.document_id)).map((d) => d.filename);
 
+  // Conversations are kept per document context (D-065): the selected documents, or, when
+  // questions go to all documents, the set of indexed documents (an upload or a removal is a
+  // new context). Reported only once the document list is known.
+  const { setScopeContext } = conversation;
+  const selectedKey = [...scope].sort().join(",");
+  const corpusKey = documents ? documents.map((d) => d.document_id).sort().join(",") : null;
+  const contextLabel = scope.size
+    ? scopeNames.join(", ")
+    : `All documents: ${(documents ?? []).map((d) => d.filename).join(", ") || "none"}`;
+  useEffect(() => {
+    if (corpusKey === null) return;
+    setScopeContext(
+      selectedKey
+        ? { signature: `selected:${selectedKey}`, scope: selectedKey.split(","), label: contextLabel }
+        : { signature: `all:${corpusKey}`, scope: null, label: contextLabel },
+    );
+  }, [selectedKey, corpusKey, contextLabel, setScopeContext]);
+
   const toggleScope = (id: string) =>
     setScopeIds((current) => {
       const next = new Set(current);
@@ -75,16 +96,33 @@ export function Workspace({ health }: { health: HealthState }) {
   };
 
   const selectSource = (turnId: string, sourceId: string) => {
-    setSelectedTurnId(turnId);
-    setSelectedSourceId(sourceId);
+    select({ turnId, sourceId });
     showEvidence();
   };
 
   const ask = (question: string) => {
-    const id = conversation.ask(question, scope.size ? [...scope] : null, scopeNames);
-    setSelectedTurnId(id);
-    setSelectedSourceId(null);
+    conversation.ask(question, scope.size ? [...scope] : null, scopeNames);
+    setConfirmClear(false);
   };
+
+  const clearConversation = () => {
+    conversation.clear();
+    setConfirmClear(false);
+    setTraceTurnId(null);
+  };
+
+  const openThread = (threadId: string) => {
+    if (threadId === "new") conversation.newThread();
+    else conversation.openThread(threadId);
+    setConfirmClear(false);
+    setTraceTurnId(null);
+  };
+
+  // A thread with explicitly selected documents can be continued when they still exist.
+  const restorable =
+    conversation.readOnly &&
+    conversation.activeScope !== null &&
+    conversation.activeScope.every((id) => (documents ?? []).some((d) => d.document_id === id));
 
   useEffect(() => {
     threadEndRef.current?.scrollIntoView?.({ block: "end" });
@@ -238,6 +276,43 @@ export function Workspace({ health }: { health: HealthState }) {
                 <p className="text-13 text-ink-500" aria-busy="true">Loading workspace…</p>
               )}
 
+              {(conversation.turns.length > 0 || conversation.threads.length > 0) && (
+                <ConversationHeader
+                  count={conversation.turns.length}
+                  persistence={conversation.persistence}
+                  confirming={confirmClear}
+                  threads={conversation.threads}
+                  activeThreadId={conversation.activeThreadId}
+                  label={conversation.activeLabel}
+                  onOpen={openThread}
+                  onRequest={() => setConfirmClear(true)}
+                  onCancel={() => setConfirmClear(false)}
+                  onConfirm={clearConversation}
+                />
+              )}
+
+              {conversation.readOnly && (
+                <InlineAlert
+                  tone="info"
+                  title="Earlier conversation with a different set of documents"
+                  action={
+                    <div className="flex flex-wrap gap-2">
+                      {restorable && conversation.activeScope && (
+                        <Button size="sm" icon={History} onClick={() => setScopeIds(() => new Set(conversation.activeScope ?? []))}>
+                          Use these documents again
+                        </Button>
+                      )}
+                      <Button size="sm" variant="ghost" onClick={() => openThread("new")}>
+                        Back to the current documents
+                      </Button>
+                    </div>
+                  }
+                >
+                  Asked with: {conversation.activeLabel}. The answers are kept as they were. A new question goes to the
+                  conversation for the documents selected now ({contextLabel}).
+                </InlineAlert>
+              )}
+
               {conversation.turns.map((turn) => (
                 <TurnView
                   key={turn.id}
@@ -247,11 +322,11 @@ export function Workspace({ health }: { health: HealthState }) {
                   traceOpen={traceTurnId === turn.id}
                   onCite={(sourceId) => selectSource(turn.id, sourceId)}
                   onShowEvidence={() => {
-                    setSelectedTurnId(turn.id);
+                    select({ turnId: turn.id, sourceId: turn.id === selectedTurnId ? selectedSourceId : null });
                     showEvidence();
                   }}
                   onToggleTrace={() => {
-                    setSelectedTurnId(turn.id);
+                    select({ turnId: turn.id, sourceId: turn.id === selectedTurnId ? selectedSourceId : null });
                     setTraceTurnId(traceTurnId === turn.id ? null : turn.id);
                   }}
                   onRetry={() => conversation.retry(turn.id)}
@@ -261,10 +336,7 @@ export function Workspace({ health }: { health: HealthState }) {
                         response={turn.state.response}
                         documents={documents}
                         selectedSourceId={turn.id === selectedTurnId ? selectedSourceId : null}
-                        onSelectSource={(sourceId) => {
-                          setSelectedTurnId(turn.id);
-                          setSelectedSourceId(sourceId);
-                        }}
+                        onSelectSource={(sourceId) => select({ turnId: turn.id, sourceId })}
                       />
                     ) : null
                   }
@@ -280,7 +352,7 @@ export function Workspace({ health }: { health: HealthState }) {
                 busy={conversation.pending}
                 disabledReason={questionDisabledReason}
                 scopeLabel={scopeLabel}
-                onClearScope={scope.size ? () => setScopeIds(new Set()) : null}
+                onClearScope={scope.size ? () => setScopeIds(() => new Set<string>()) : null}
               />
             </div>
           </div>
@@ -290,11 +362,106 @@ export function Workspace({ health }: { health: HealthState }) {
           <EvidencePanel
             turn={selectedTurn}
             selectedSourceId={selectedSourceId}
-            onSelectSource={(id) => setSelectedSourceId(id)}
+            onSelectSource={(id) => select({ turnId: selectedTurnId, sourceId: id })}
             onClose={sheetOpen && isLg && !isXl ? () => setSheetOpen(false) : undefined}
           />
         </aside>
       </div>
+    </div>
+  );
+}
+
+function threadLabel(thread: ThreadSummary): string {
+  const when = formatDateTime(thread.updatedAt);
+  const marker = thread.current ? "" : " (other documents)";
+  return `${thread.label}${marker} · ${plural(thread.questionCount, "question")} · ${when}`;
+}
+
+function ConversationHeader({
+  count,
+  persistence,
+  confirming,
+  threads,
+  activeThreadId,
+  label,
+  onOpen,
+  onRequest,
+  onCancel,
+  onConfirm,
+}: {
+  count: number;
+  persistence: Persistence;
+  confirming: boolean;
+  threads: ThreadSummary[];
+  activeThreadId: string | null;
+  label: string | null;
+  onOpen: (threadId: string) => void;
+  onRequest: () => void;
+  onCancel: () => void;
+  onConfirm: () => void;
+}) {
+  const where =
+    persistence === "session"
+      ? "Kept in this browser tab until you clear it or close the tab; never sent anywhere."
+      : "Kept in memory only (browser storage is unavailable): a reload clears it.";
+  return (
+    <div className="space-y-2 border-b border-paper-300 pb-3">
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div className="min-w-0">
+          <h2 className="section-label">
+            Conversation<span className="tnum"> · {plural(count, "question")}</span>
+          </h2>
+          {label && <p className="mt-0.5 truncate text-12 text-ink-700" title={label}>Documents: {label}</p>}
+          <p className="mt-0.5 text-12 text-ink-500">{where}</p>
+        </div>
+        {confirming ? (
+          <div role="group" aria-label="Confirm clearing the conversation" className="flex flex-wrap items-center gap-2">
+            <span className="text-13 text-ink-700">
+              Remove this conversation ({plural(count, "question")})? Other conversations are kept.
+            </span>
+            <Button size="sm" variant="destructive" icon={Trash2} onClick={onConfirm}>
+              Clear
+            </Button>
+            <Button size="sm" variant="ghost" onClick={onCancel}>
+              Cancel
+            </Button>
+          </div>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="ghost" icon={Plus} onClick={() => onOpen("new")} disabled={activeThreadId === null}>
+              New conversation
+            </Button>
+            {count > 0 && (
+              <Button size="sm" variant="ghost" icon={Trash2} onClick={onRequest}>
+                Clear conversation
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+      {activeThreadId === null && threads.length > 0 && (
+        <p className="text-13 text-ink-700" role="status">
+          New conversation for the current documents. Earlier conversations are kept in the list below.
+        </p>
+      )}
+      {threads.length > 0 && (
+        <label className="flex min-w-0 flex-col gap-1 text-12 text-ink-500">
+          Conversations in this tab ({threads.length})
+          <select
+            name="conversation"
+            className={`${fieldClass} w-full max-w-[560px]`}
+            value={activeThreadId ?? "new"}
+            onChange={(e) => onOpen(e.target.value)}
+          >
+            {activeThreadId === null && <option value="new">New conversation (current documents)</option>}
+            {threads.map((t) => (
+              <option key={t.id} value={t.id}>
+                {threadLabel(t)}
+              </option>
+            ))}
+          </select>
+        </label>
+      )}
     </div>
   );
 }

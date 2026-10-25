@@ -1,0 +1,937 @@
+{
+  "dataset_id": "structural-retrieval",
+  "version": "1.0.0",
+  "description": "Structural retrieval benchmark (2026-10-16): tables with wrapped cells (emitted cell by cell and row-major), slide-style multi-region pages, headings with nested lists, a long paragraph crossing chunk boundaries, and two documents with the same wording but different facts, plus VEIL risk-table regressions and negative controls. Synthetic fixtures (fictional organisations) and a copy of the owner's VEIL proposal PDF. Separate from the core and VEIL benchmarks.",
+  "corpus_dir": "corpus",
+  "cases": [
+    {
+      "id": "STR-VEL-001",
+      "question": "What mitigates free-tier rate limits?",
+      "answerability": "answerable",
+      "category": "factual",
+      "reference_answer": "Retries plus failover from Groq to Gemini (the proposal's risk table).",
+      "expected_sources": [
+        "SIH2026_BinaryBrainCells_PS_26171.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "retries",
+          "match_any": [
+            "Retries",
+            "retry"
+          ]
+        },
+        {
+          "description": "Groq-to-Gemini failover",
+          "match_any": [
+            "Groq to Gemini failover",
+            "Gemini failover",
+            "failover to Gemini",
+            "fail over to Gemini",
+            "falls back to Gemini"
+          ]
+        }
+      ],
+      "notes": "Owner's Query A (2026-10-16): generic wording without the table heading; with prompt v6 the best passage scored 0.286 and the gate blocked the model."
+    },
+    {
+      "id": "STR-VEL-002",
+      "question": "According to the 'Risks → Mitigation' table on page 4, what mitigation does VEIL specify for free-tier rate limits?",
+      "answerability": "answerable",
+      "category": "factual",
+      "reference_answer": "Retries + Groq to Gemini failover.",
+      "expected_sources": [
+        "SIH2026_BinaryBrainCells_PS_26171.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "retries",
+          "match_any": [
+            "Retries",
+            "retry"
+          ]
+        },
+        {
+          "description": "Groq-to-Gemini failover",
+          "match_any": [
+            "Groq to Gemini failover",
+            "Gemini failover",
+            "failover to Gemini",
+            "fail over to Gemini",
+            "falls back to Gemini"
+          ]
+        }
+      ],
+      "notes": "Owner's Query B: explicitly references the table; must stay correct."
+    },
+    {
+      "id": "STR-VEL-003",
+      "question": "What risks does the proposal identify and what mitigation is proposed for each?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "Free-tier rate limits -> retries + Groq-to-Gemini failover; heuristic PII detection -> fail-closed gate + canary tests; only one controlled page tested -> staged tests from React to complex sites; OCR-only visual slice -> add face detection and pixel redaction (a planned addition).",
+      "expected_sources": [
+        "SIH2026_BinaryBrainCells_PS_26171.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "risk: rate limits",
+          "match_any": [
+            "rate limits",
+            "rate-limits"
+          ]
+        },
+        {
+          "description": "mitigation: retries",
+          "match_any": [
+            "Retries",
+            "retry"
+          ]
+        },
+        {
+          "description": "risk: heuristic PII detection",
+          "match_any": [
+            "Heuristic PII detection",
+            "heuristic PII"
+          ]
+        },
+        {
+          "description": "mitigation: fail-closed gate",
+          "match_any": [
+            "Fail-closed gate",
+            "fail-closed"
+          ]
+        },
+        {
+          "description": "risk: one controlled page",
+          "match_any": [
+            "One controlled page",
+            "controlled page"
+          ]
+        },
+        {
+          "description": "mitigation: staged tests",
+          "match_any": [
+            "Staged tests",
+            "staged testing"
+          ]
+        },
+        {
+          "description": "risk: OCR-only visual slice",
+          "match_any": [
+            "OCR-only"
+          ]
+        },
+        {
+          "description": "mitigation: face detection / pixel redaction",
+          "match_any": [
+            "face detection",
+            "pixel redaction"
+          ]
+        }
+      ],
+      "notes": "Owner's Query C: all four rows. Under prompt v6 the wrapped row 'One controlled page tested' was omitted. Lexical checks confirm each risk and mitigation is named, not their pairing."
+    },
+    {
+      "id": "STR-VEL-004",
+      "question": "The proposal admits that only one controlled page was tested. What does it plan to do about that?",
+      "answerability": "answerable",
+      "category": "paraphrased",
+      "reference_answer": "Staged tests: React first, then more complex sites.",
+      "expected_sources": [
+        "SIH2026_BinaryBrainCells_PS_26171.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "staged tests",
+          "match_any": [
+            "Staged tests",
+            "staged testing",
+            "staged"
+          ]
+        },
+        {
+          "description": "towards complex sites",
+          "match_any": [
+            "complex sites",
+            "more complex"
+          ]
+        }
+      ],
+      "notes": "Single row; the risk cell wraps over two lines in the PDF."
+    },
+    {
+      "id": "STR-VEL-005",
+      "question": "Does VEIL already detect faces and redact pixels in screenshots?",
+      "answerability": "answerable",
+      "category": "false_premise",
+      "reference_answer": "No: the proposal's current visual coverage is OCR-only; adding face detection and pixel redaction is the mitigation it proposes for that risk, not an implemented capability.",
+      "expected_sources": [
+        "SIH2026_BinaryBrainCells_PS_26171.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "OCR-only coverage",
+          "match_any": [
+            "OCR-only"
+          ]
+        },
+        {
+          "description": "face detection proposed",
+          "match_any": [
+            "face detection",
+            "pixel redaction"
+          ]
+        }
+      ],
+      "notes": "Distinguishes a proposed mitigation from an implemented capability.",
+      "forbidden_patterns": [
+        "(?i)\\b(already|currently)\\s+(detects?|performs?|supports?|uses|does|redacts?)\\b[^.]{0,30}\\b(faces?|face detection|pixel)"
+      ]
+    },
+    {
+      "id": "STR-VEL-006",
+      "question": "Which risk is addressed by staged tests that move from React to more complex sites?",
+      "answerability": "answerable",
+      "category": "paraphrased",
+      "reference_answer": "Only one controlled page was tested.",
+      "expected_sources": [
+        "SIH2026_BinaryBrainCells_PS_26171.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "one controlled page tested",
+          "match_any": [
+            "One controlled page",
+            "controlled page",
+            "one page"
+          ]
+        }
+      ],
+      "notes": "Reverse lookup (mitigation -> risk) for the wrapped row."
+    },
+    {
+      "id": "STR-VEL-007",
+      "question": "What retry limit and backoff interval does VEIL use for the Groq API?",
+      "answerability": "unanswerable",
+      "category": "related_unanswerable",
+      "reference_answer": null,
+      "expected_sources": [],
+      "required_facts": [],
+      "notes": "The proposal names retries and failover but gives no retry count or backoff interval."
+    },
+    {
+      "id": "STR-VEL-008",
+      "question": "Which mitigation does the proposal give for the risk of the extension being rejected by the Chrome Web Store?",
+      "answerability": "unanswerable",
+      "category": "lookalike_unanswerable",
+      "reference_answer": null,
+      "expected_sources": [],
+      "required_facts": [],
+      "notes": "No such risk is listed; worded like the risk-table questions."
+    },
+    {
+      "id": "STR-TAB-001",
+      "question": "What are the limitations of the Team tier?",
+      "answerability": "answerable",
+      "category": "factual",
+      "reference_answer": "2 TB storage; API limited to 1,000 requests per minute.",
+      "expected_sources": [
+        "northwind_service_tiers.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "2 TB",
+          "match_any": [
+            "2 TB"
+          ]
+        },
+        {
+          "description": "1,000 requests",
+          "match_any": [
+            "1,000",
+            "1,000requests"
+          ]
+        }
+      ],
+      "notes": "Direct lookup with the table's own terms. The pre-2026-10-16 extractor glues the wrapped cell into '1,000requests' (no space); that spelling is listed only so the dataset validates under both extractors."
+    },
+    {
+      "id": "STR-TAB-002",
+      "question": "How much can I store on Northwind's Starter plan, and can I share folders there?",
+      "answerability": "answerable",
+      "category": "paraphrased",
+      "reference_answer": "50 GB; no shared folders.",
+      "expected_sources": [
+        "northwind_service_tiers.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "50 GB",
+          "match_any": [
+            "50 GB"
+          ]
+        },
+        {
+          "description": "no shared folders",
+          "match_any": [
+            "no shared folders",
+            "not include shared folders",
+            "shared folders are not",
+            "cannot share folders"
+          ]
+        }
+      ],
+      "notes": "Paraphrase without the table heading."
+    },
+    {
+      "id": "STR-TAB-003",
+      "question": "Which Northwind plan keeps audit logs the longest, and for how long?",
+      "answerability": "answerable",
+      "category": "low_overlap_paraphrase",
+      "reference_answer": "Enterprise: audit log retained for 400 days.",
+      "expected_sources": [
+        "northwind_service_tiers.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "Enterprise",
+          "match_any": [
+            "Enterprise"
+          ]
+        },
+        {
+          "description": "400 days",
+          "match_any": [
+            "400 days"
+          ]
+        }
+      ],
+      "notes": "Relationship between two fields of one row."
+    },
+    {
+      "id": "STR-TAB-004",
+      "question": "List every Northwind service tier together with its limitations.",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "Starter: 50 GB, no shared folders, email support only; Team: 2 TB, API 1,000 requests per minute; Enterprise: no storage cap, audit log 400 days; Education: accredited schools only, no single sign-on.",
+      "expected_sources": [
+        "northwind_service_tiers.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "Starter 50 GB",
+          "match_any": [
+            "50 GB"
+          ]
+        },
+        {
+          "description": "Team 2 TB",
+          "match_any": [
+            "2 TB"
+          ]
+        },
+        {
+          "description": "Enterprise 400 days",
+          "match_any": [
+            "400 days"
+          ]
+        },
+        {
+          "description": "Education accredited schools",
+          "match_any": [
+            "accredited schools"
+          ]
+        }
+      ],
+      "notes": "All rows of a table."
+    },
+    {
+      "id": "STR-TAB-005",
+      "question": "What request limit applies to Northwind's public status API?",
+      "answerability": "answerable",
+      "category": "factual",
+      "reference_answer": "60 requests per minute for every customer, independent of the plan.",
+      "expected_sources": [
+        "northwind_service_tiers.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "60 requests per minute",
+          "match_any": [
+            "60 requests"
+          ]
+        }
+      ],
+      "notes": "Prose and table share keywords (requests per minute) with different answers.",
+      "forbidden_strings": [
+        "1,000 requests per minute for the status",
+        "status API is limited to 1,000"
+      ]
+    },
+    {
+      "id": "STR-TAB-006",
+      "question": "Which Northwind tier does not include single sign-on?",
+      "answerability": "answerable",
+      "category": "paraphrased",
+      "reference_answer": "The Education tier.",
+      "expected_sources": [
+        "northwind_service_tiers.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "Education",
+          "match_any": [
+            "Education"
+          ]
+        }
+      ],
+      "notes": "Reverse lookup of a wrapped cell."
+    },
+    {
+      "id": "STR-TAB-007",
+      "question": "For how long can deleted files be recovered on Northwind?",
+      "answerability": "answerable",
+      "category": "factual",
+      "reference_answer": "30 days (deleted-file recovery window).",
+      "expected_sources": [
+        "northwind_service_tiers.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "30 days",
+          "match_any": [
+            "30 days"
+          ]
+        }
+      ],
+      "notes": "Fact in a stats card above the table."
+    },
+    {
+      "id": "STR-NEG-001",
+      "question": "What is the storage limit of the Northwind Business tier?",
+      "answerability": "unanswerable",
+      "category": "lookalike_unanswerable",
+      "reference_answer": null,
+      "expected_sources": [],
+      "required_facts": [],
+      "notes": "There is no Business tier."
+    },
+    {
+      "id": "STR-NEG-002",
+      "question": "How much does the Northwind Team tier cost per month?",
+      "answerability": "unanswerable",
+      "category": "related_unanswerable",
+      "reference_answer": null,
+      "expected_sources": [],
+      "required_facts": [],
+      "notes": "No prices are given (only a 12% annual discount)."
+    },
+    {
+      "id": "STR-INC-001",
+      "question": "What is the response time for a SEV-2 incident?",
+      "answerability": "answerable",
+      "category": "factual",
+      "reference_answer": "4 hours.",
+      "expected_sources": [
+        "incident_severity_matrix.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "4 hours",
+          "match_any": [
+            "4 hours",
+            "four hours"
+          ]
+        }
+      ],
+      "notes": "Direct lookup; page 2 mentions SEV-2 with a different number (9 hours, average resolution).",
+      "forbidden_strings": [
+        "response time for a SEV-2 incident is 9 hours"
+      ]
+    },
+    {
+      "id": "STR-INC-002",
+      "question": "If customers cannot log in at all, who has to be paged and how quickly?",
+      "answerability": "answerable",
+      "category": "low_overlap_paraphrase",
+      "reference_answer": "SEV-1: page the on-call lead (and open a bridge call) within 15 minutes.",
+      "expected_sources": [
+        "incident_severity_matrix.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "on-call lead",
+          "match_any": [
+            "on-call lead"
+          ]
+        },
+        {
+          "description": "15 minutes",
+          "match_any": [
+            "15 minutes"
+          ]
+        }
+      ],
+      "notes": "Paraphrase of a wrapped example cell."
+    },
+    {
+      "id": "STR-INC-003",
+      "question": "Which severity level only requires adding the issue to the backlog?",
+      "answerability": "answerable",
+      "category": "paraphrased",
+      "reference_answer": "SEV-4.",
+      "expected_sources": [
+        "incident_severity_matrix.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "SEV-4",
+          "match_any": [
+            "SEV-4"
+          ]
+        }
+      ],
+      "notes": "Reverse lookup."
+    },
+    {
+      "id": "STR-INC-004",
+      "question": "What is the required action for each severity level?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "SEV-1: page the on-call lead and open a bridge call; SEV-2: notify the duty manager and post a status update; SEV-3: create a ticket for the owning team; SEV-4: add to the backlog.",
+      "expected_sources": [
+        "incident_severity_matrix.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "SEV-1 on-call lead",
+          "match_any": [
+            "on-call lead"
+          ]
+        },
+        {
+          "description": "SEV-2 duty manager",
+          "match_any": [
+            "duty manager"
+          ]
+        },
+        {
+          "description": "SEV-3 ticket",
+          "match_any": [
+            "ticket"
+          ]
+        },
+        {
+          "description": "SEV-4 backlog",
+          "match_any": [
+            "backlog"
+          ]
+        }
+      ],
+      "notes": "All rows; cells wrap over two lines."
+    },
+    {
+      "id": "STR-INC-005",
+      "question": "How long did SEV-2 incidents take to resolve on average during the 2025 pilot?",
+      "answerability": "answerable",
+      "category": "source_selection",
+      "reference_answer": "9 hours on average (pilot review), not the 4-hour response time from the matrix.",
+      "expected_sources": [
+        "incident_severity_matrix.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "9 hours",
+          "match_any": [
+            "9 hours",
+            "nine hours"
+          ]
+        }
+      ],
+      "notes": "Prose page vs. table with the same keywords."
+    },
+    {
+      "id": "STR-INC-006",
+      "question": "What is the response time for SEV-3 incidents, and which ticketing tool is used?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "2 working days; the document does not name a ticketing tool.",
+      "expected_sources": [
+        "incident_severity_matrix.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "2 working days",
+          "match_any": [
+            "2 working days",
+            "two working days"
+          ]
+        }
+      ],
+      "notes": "Partial evidence: the tool is not stated and must not be invented.",
+      "forbidden_strings": [
+        "Jira",
+        "ServiceNow",
+        "Zendesk"
+      ]
+    },
+    {
+      "id": "STR-NEG-003",
+      "question": "What is the response time for a SEV-5 incident?",
+      "answerability": "unanswerable",
+      "category": "lookalike_unanswerable",
+      "reference_answer": null,
+      "expected_sources": [],
+      "required_facts": [],
+      "notes": "The matrix ends at SEV-4."
+    },
+    {
+      "id": "STR-HDG-001",
+      "question": "What colour badge do visitors receive at Kestrel Ridge?",
+      "answerability": "answerable",
+      "category": "factual",
+      "reference_answer": "Orange.",
+      "expected_sources": [
+        "kestrel_ridge_staff_handbook.txt"
+      ],
+      "required_facts": [
+        {
+          "description": "orange",
+          "match_any": [
+            "orange"
+          ]
+        }
+      ],
+      "notes": "Nested bullet under a heading."
+    },
+    {
+      "id": "STR-HDG-002",
+      "question": "Until what time may students stay, and what do they need for that?",
+      "answerability": "answerable",
+      "category": "paraphrased",
+      "reference_answer": "Until 02:00, with a supervisor's written approval.",
+      "expected_sources": [
+        "kestrel_ridge_staff_handbook.txt"
+      ],
+      "required_facts": [
+        {
+          "description": "02:00",
+          "match_any": [
+            "02:00",
+            "2:00",
+            "2 am",
+            "2 a.m."
+          ]
+        },
+        {
+          "description": "written approval",
+          "match_any": [
+            "written approval"
+          ]
+        }
+      ],
+      "notes": "Two nested bullets of one group."
+    },
+    {
+      "id": "STR-HDG-003",
+      "question": "Which badge colour does each group of people receive?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "Visitors orange, students green, contractors grey.",
+      "expected_sources": [
+        "kestrel_ridge_staff_handbook.txt"
+      ],
+      "required_facts": [
+        {
+          "description": "orange",
+          "match_any": [
+            "orange"
+          ]
+        },
+        {
+          "description": "green",
+          "match_any": [
+            "green"
+          ]
+        },
+        {
+          "description": "grey",
+          "match_any": [
+            "grey",
+            "gray"
+          ]
+        }
+      ],
+      "notes": "All entries across three bullet groups."
+    },
+    {
+      "id": "STR-HDG-004",
+      "question": "What must staff do if there is a thunderstorm nearby?",
+      "answerability": "answerable",
+      "category": "low_overlap_paraphrase",
+      "reference_answer": "With lightning within 10 km: shut down all instruments and leave the dome.",
+      "expected_sources": [
+        "kestrel_ridge_staff_handbook.txt"
+      ],
+      "required_facts": [
+        {
+          "description": "shut down instruments",
+          "match_any": [
+            "shut down all instruments",
+            "shut down the instruments",
+            "shut down instruments"
+          ]
+        },
+        {
+          "description": "10 km",
+          "match_any": [
+            "10 km"
+          ]
+        }
+      ],
+      "notes": "Low word overlap (thunderstorm vs lightning)."
+    },
+    {
+      "id": "STR-HDG-005",
+      "question": "How long can the calibration lamp stay on before it overheats?",
+      "answerability": "answerable",
+      "category": "factual",
+      "reference_answer": "40 minutes.",
+      "expected_sources": [
+        "kestrel_ridge_staff_handbook.txt"
+      ],
+      "required_facts": [
+        {
+          "description": "40 minutes",
+          "match_any": [
+            "40 minutes"
+          ]
+        }
+      ],
+      "notes": "Fact inside a paragraph."
+    },
+    {
+      "id": "STR-NEG-004",
+      "question": "What is the observatory's policy on bringing pets?",
+      "answerability": "unanswerable",
+      "category": "related_unanswerable",
+      "reference_answer": null,
+      "expected_sources": [],
+      "required_facts": [],
+      "notes": "Not covered."
+    },
+    {
+      "id": "STR-LNG-001",
+      "question": "By when must the emergency drawdown valve be tested?",
+      "answerability": "answerable",
+      "category": "factual",
+      "reference_answer": "Before 31 October 2025.",
+      "expected_sources": [
+        "millbrook_reservoir_inspection_report.txt"
+      ],
+      "required_facts": [
+        {
+          "description": "31 October 2025",
+          "match_any": [
+            "31 October 2025"
+          ]
+        }
+      ],
+      "notes": "Fact near the end of a long paragraph."
+    },
+    {
+      "id": "STR-LNG-002",
+      "question": "Did the seepage at weir B suggest internal erosion?",
+      "answerability": "answerable",
+      "category": "paraphrased",
+      "reference_answer": "No: 0.6 litres per second, clear and free of sediment, so no sign of internal erosion.",
+      "expected_sources": [
+        "millbrook_reservoir_inspection_report.txt"
+      ],
+      "required_facts": [
+        {
+          "description": "0.6 litres per second",
+          "match_any": [
+            "0.6"
+          ]
+        }
+      ],
+      "notes": "Middle of the paragraph."
+    },
+    {
+      "id": "STR-LNG-003",
+      "question": "What was the maximum settlement measured, and what is the design allowance?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "18 millimetres at pin 7; the design allowance is 40 millimetres.",
+      "expected_sources": [
+        "millbrook_reservoir_inspection_report.txt"
+      ],
+      "required_facts": [
+        {
+          "description": "18 mm",
+          "match_any": [
+            "18 millimetres",
+            "18 mm"
+          ]
+        },
+        {
+          "description": "40 mm",
+          "match_any": [
+            "40 millimetres",
+            "40 mm"
+          ]
+        }
+      ],
+      "notes": "Two numbers in one sentence."
+    },
+    {
+      "id": "STR-LNG-004",
+      "question": "How quickly did the spillway gate close, and what is the limit?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "3 minutes and 40 seconds, inside the 5-minute limit.",
+      "expected_sources": [
+        "millbrook_reservoir_inspection_report.txt"
+      ],
+      "required_facts": [
+        {
+          "description": "3 min 40 s",
+          "match_any": [
+            "3 minutes and 40 seconds",
+            "3 minutes 40 seconds",
+            "3:40"
+          ]
+        },
+        {
+          "description": "5-minute limit",
+          "match_any": [
+            "5-minute",
+            "5 minutes",
+            "five minutes"
+          ]
+        }
+      ],
+      "notes": "Later in the paragraph."
+    },
+    {
+      "id": "STR-NEG-005",
+      "question": "What was the seepage flow at weir D?",
+      "answerability": "unanswerable",
+      "category": "lookalike_unanswerable",
+      "reference_answer": null,
+      "expected_sources": [],
+      "required_facts": [],
+      "notes": "Only weir B's flow is reported (there are three weirs)."
+    },
+    {
+      "id": "STR-SIM-001",
+      "question": "How much is the annual parking permit on the South Campus?",
+      "answerability": "answerable",
+      "category": "source_selection",
+      "reference_answer": "310 euros.",
+      "expected_sources": [
+        "harlow_parking_permits_south_campus.txt"
+      ],
+      "required_facts": [
+        {
+          "description": "310 euros",
+          "match_any": [
+            "310"
+          ]
+        }
+      ],
+      "notes": "Same headings and wording in the North Campus document (240 euros).",
+      "forbidden_strings": [
+        "240 euros"
+      ]
+    },
+    {
+      "id": "STR-SIM-002",
+      "question": "How many charging points does the North Campus have, and is charging free?",
+      "answerability": "answerable",
+      "category": "source_selection",
+      "reference_answer": "14 charging points in N3; free for permit holders for up to 4 hours.",
+      "expected_sources": [
+        "harlow_parking_permits_north_campus.txt"
+      ],
+      "required_facts": [
+        {
+          "description": "14",
+          "match_any": [
+            "14"
+          ]
+        },
+        {
+          "description": "free",
+          "match_any": [
+            "free"
+          ]
+        }
+      ],
+      "notes": "Similar document has 6 points and paid charging.",
+      "forbidden_strings": [
+        "0.25 euros"
+      ]
+    },
+    {
+      "id": "STR-SIM-003",
+      "question": "Compare the evening permit prices on the North and South campuses.",
+      "answerability": "answerable",
+      "category": "multi_source",
+      "reference_answer": "North: 60 euros per term; South: 75 euros per term.",
+      "expected_sources": [
+        "harlow_parking_permits_north_campus.txt",
+        "harlow_parking_permits_south_campus.txt"
+      ],
+      "required_facts": [
+        {
+          "description": "North 60",
+          "match_any": [
+            "60 euros",
+            "60"
+          ]
+        },
+        {
+          "description": "South 75",
+          "match_any": [
+            "75 euros",
+            "75"
+          ]
+        }
+      ],
+      "notes": "Both documents are needed."
+    },
+    {
+      "id": "STR-NEG-006",
+      "question": "How much does a parking permit for the East Campus cost?",
+      "answerability": "unanswerable",
+      "category": "lookalike_unanswerable",
+      "reference_answer": null,
+      "expected_sources": [],
+      "required_facts": [],
+      "notes": "Only North and South campus documents exist."
+    },
+    {
+      "id": "STR-NEG-007",
+      "question": "What is the boiling point of liquid nitrogen?",
+      "answerability": "unanswerable",
+      "category": "unrelated",
+      "reference_answer": null,
+      "expected_sources": [],
+      "required_facts": [],
+      "notes": "Nothing related."
+    },
+    {
+      "id": "STR-NEG-008",
+      "question": "Who painted the Mona Lisa?",
+      "answerability": "unanswerable",
+      "category": "unrelated",
+      "reference_answer": null,
+      "expected_sources": [],
+      "required_facts": [],
+      "notes": "Nothing related."
+    }
+  ]
+}

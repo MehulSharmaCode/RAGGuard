@@ -1,0 +1,24 @@
+Kestrel Ridge Observatory - Staff Handbook
+
+Night access
+The dome is open to staff between 19:00 and 05:00 from March to October.
+- Visitors
+  - must be accompanied by a staff member at all times
+  - receive an orange badge at the gatehouse
+- Students
+  - may stay until 02:00 with a supervisor's written approval
+  - receive a green badge
+- Contractors
+  - work only between 08:00 and 17:00
+  - receive a grey badge and an escort
+
+Equipment booking
+The 1.2-metre telescope is booked through the scheduling board, and a booking holds for 48 hours if it is not confirmed. Spectrograph sessions need a calibration run before the first exposure, and the calibration lamp must be switched off after use because it overheats after 40 minutes.
+
+Weather closures
+- Wind above 45 km/h: close the dome immediately
+- Humidity above 85%: keep the dome closed and cover the mirror
+- Lightning within 10 km: shut down all instruments and leave the dome
+
+Lost badges
+Report a lost badge to the gatehouse on the same night. A replacement badge costs 15 euros and is issued the next working day.

@@ -25,11 +25,13 @@ export interface NavItem {
   plannedStage?: number;
 }
 
+// All four views read real backend data since Stage 5.5. The Pipeline view shows the
+// pending CI/CD stages inside the view, so the item itself is not marked as planned.
 export const NAV: NavItem[] = [
   { view: "workspace", label: "Workspace", icon: FileText },
-  { view: "evaluation", label: "Evaluation", icon: ShieldCheck, plannedStage: 4 },
-  { view: "experiments", label: "Experiments", icon: FlaskConical, plannedStage: 5 },
-  { view: "pipeline", label: "Pipeline", icon: GitCommitHorizontal, plannedStage: 7 },
+  { view: "evaluation", label: "Evaluation", icon: ShieldCheck },
+  { view: "experiments", label: "Experiments", icon: FlaskConical },
+  { view: "pipeline", label: "Pipeline", icon: GitCommitHorizontal },
 ];
 
 function BrandMark() {

@@ -1,0 +1,5 @@
+LUMEN proposal summary (fictional comparison document)
+
+Synthetic fixture written for the RAGGuard VEIL Document Challenge benchmark. LUMEN is an invented project used as a distractor; none of these numbers describe VEIL.
+
+LUMEN is a fictional assistant that reads scanned government forms and fills in the matching web form. Its summary reports 212 automated tests: 120 TypeScript tests and 92 Python tests. In an early leak test, 3 of 40 canary values appeared in debug logs; after a logging fix, none of the 40 appeared across 60 logged payloads. LUMEN runs its OCR on a laptop GPU and takes 2.6 seconds per page. Its main risk is poor handwriting recognition, which it plans to mitigate with a human review queue.

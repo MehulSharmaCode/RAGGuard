@@ -1,0 +1,5 @@
+TideWatch T3 Firmware 4.2 - Release Notes
+Released 10 June 2025.
+
+Changes
+The default sampling interval is now 5 minutes. It was previously 10 minutes, as stated in specification sheet version 2.1. The configurable range is unchanged.

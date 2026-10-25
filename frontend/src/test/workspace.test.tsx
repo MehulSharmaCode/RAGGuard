@@ -4,6 +4,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it } from "vitest";
 import { App } from "../app/App";
+import { AnswerText } from "../features/chat/AnswerText";
 import {
   answered,
   belowThreshold,
@@ -32,16 +33,19 @@ async function ask(user: ReturnType<typeof userEvent.setup>, question: string) {
 }
 
 describe("shell and status", () => {
-  it("renders the shell with real backend status and honest planned views", async () => {
-    const { user } = setup({ "GET /documents": { body: { documents: [] } } });
+  it("renders the shell with real backend status and no planned markers on implemented views", async () => {
+    const { user } = setup({
+      "GET /documents": { body: { documents: [] } },
+      "GET /evaluations": { body: { results_dir: "evaluation/results", reports: [] } },
+    });
     expect(screen.getByRole("heading", { level: 1, name: "Document workspace" })).toBeInTheDocument();
     expect(await screen.findByText("Backend connected")).toBeInTheDocument();
     expect(screen.getByText("collection ragguard_chunks")).toBeInTheDocument();
 
     const nav = screen.getAllByRole("navigation", { name: "Primary" })[0]!;
-    await user.click(within(nav).getByRole("link", { name: "Evaluation (planned, stage 4)" }));
-    expect(await screen.findByText(/No evaluation runs yet/)).toBeInTheDocument();
-    expect(screen.getByText("Planned · Stage 4")).toBeInTheDocument();
+    expect(within(nav).queryByText("planned")).not.toBeInTheDocument();
+    await user.click(within(nav).getByRole("link", { name: "Evaluation" }));
+    expect(await screen.findByRole("heading", { name: "No evaluation reports yet" })).toBeInTheDocument();
     expect(screen.queryByText(/%/)).not.toBeInTheDocument(); // no invented metrics
   });
 
@@ -311,6 +315,12 @@ describe("Evidence Trace", () => {
     await user.click(await screen.findByRole("button", { name: "Trace this answer" }));
     await user.click(screen.getByRole("button", { name: "Remove handbook.pdf" }));
     await user.click(within(screen.getByRole("group", { name: /Confirm removal/ })).getByRole("button", { name: "Remove" }));
+    // Removing a document changes the corpus: a new conversation starts (D-065); the earlier
+    // one stays available as history and still traces its answer.
+    const picker = await screen.findByRole("combobox", { name: /Conversations in this tab/ });
+    const earlier = within(picker).getAllByRole("option").find((o) => o.textContent?.includes("(other documents)"))!;
+    await user.selectOptions(picker, earlier);
+    await user.click(await screen.findByRole("button", { name: "Trace this answer" }));
     const trace = screen.getByRole("region", { name: "Evidence trace" });
     await user.click(within(trace).getByRole("tab", { name: /Documents/ }));
     await waitFor(() =>
@@ -318,4 +328,18 @@ describe("Evidence Trace", () => {
     );
   });
 
+
+  it("renders adjacent citations as one bracketed group that keeps each source link", async () => {
+    const user = userEvent.setup();
+    const cited: string[] = [];
+    const { container } = render(
+      <AnswerText answer="Leave is 25 days [S1][S2]." sources={answered.sources} selectedSourceId={null} onCite={(id) => cited.push(id)} />,
+    );
+    expect(container).toHaveTextContent("Leave is 25 days [S1, S2].");
+    expect(container.textContent).not.toContain("S1S2");
+    const buttons = within(container).getAllByRole("button");
+    expect(buttons.map((b) => b.textContent)).toEqual(["S1", "S2"]);
+    await user.click(buttons[1]!);
+    expect(cited).toEqual(["S2"]);
+  });
 });

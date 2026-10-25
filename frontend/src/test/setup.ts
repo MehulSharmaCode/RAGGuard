@@ -8,5 +8,6 @@ HTMLCanvasElement.prototype.getContext = (() => null) as typeof HTMLCanvasElemen
 afterEach(() => {
   cleanup();
   window.localStorage.clear();
+  window.sessionStorage.clear(); // the conversation is kept per tab in sessionStorage
   window.location.hash = "";
 });

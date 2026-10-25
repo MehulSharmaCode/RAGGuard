@@ -1,0 +1,978 @@
+{
+  "dataset_id": "agrisense-evident",
+  "version": "1.1.0",
+  "description": "AgriSense research synthesis (22-page PDF supplied by the owner): the selected EVIDENT invention, verdict states, assurance levels, gap planning, failure handling, re-evaluation, joint holdings, numeric table claims, proposed vs demonstrated capabilities, false premises, overlapping terminology, and unsupported performance claims. Answers restate the document; they are not independently verified facts. Separate from the core, VEIL, and structural benchmarks.",
+  "corpus_dir": "corpus",
+  "cases": [
+    {
+      "id": "AGR-COR-001",
+      "question": "What is EVIDENT, and what are the four mechanisms that form its core contribution?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "EVIDENT (Evidence-graded, Versioned Eligibility with Deterministic gap Targeting) is the selected core: an evidence-graded, version-aware eligibility engine. Its four mechanisms: assurance-typed evidence; assurance-aware multi-valued evaluation; minimum-cost gap targeting; bitemporal selective re-evaluation.",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "expansion / definition",
+          "match_any": [
+            "Evidence-graded",
+            "evidence-graded",
+            "eligibility engine"
+          ]
+        },
+        {
+          "description": "assurance-typed evidence",
+          "match_any": [
+            "assurance-typed",
+            "Assurance-typed"
+          ]
+        },
+        {
+          "description": "multi-valued evaluation",
+          "match_any": [
+            "multi-valued"
+          ]
+        },
+        {
+          "description": "minimum-cost gap targeting",
+          "match_any": [
+            "gap targeting",
+            "gap planning",
+            "Minimum-cost gap",
+            "minimum-cost gap"
+          ]
+        },
+        {
+          "description": "bitemporal selective re-evaluation",
+          "match_any": [
+            "bitemporal",
+            "Bitemporal",
+            "selective re-evaluation"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          1,
+          2,
+          12
+        ]
+      },
+      "notes": "Owner's failing question 1 (2026-10-16: best score 0.325 < 0.35, model not called). The four parts are listed on page 12 (split across two chunks) and named on page 2; the expansion is on page 1."
+    },
+    {
+      "id": "AGR-VRD-001",
+      "question": "List all seven final verdict states supported by EVIDENT.",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "ELIGIBLE_ESTABLISHED, ELIGIBLE_PROVISIONAL, CONTINGENT, INDETERMINATE, CONFLICTED, INELIGIBLE_ESTABLISHED, INELIGIBLE_PROVISIONAL.",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "ELIGIBLE_ESTABLISHED",
+          "match_any": [
+            "ELIGIBLE_ESTABLISHED",
+            "eligible established",
+            "eligible-established",
+            "Eligible (established)"
+          ]
+        },
+        {
+          "description": "ELIGIBLE_PROVISIONAL",
+          "match_any": [
+            "ELIGIBLE_PROVISIONAL",
+            "eligible provisional",
+            "eligible-provisional",
+            "Eligible (provisional)"
+          ]
+        },
+        {
+          "description": "CONTINGENT",
+          "match_any": [
+            "CONTINGENT"
+          ]
+        },
+        {
+          "description": "INDETERMINATE",
+          "match_any": [
+            "INDETERMINATE"
+          ]
+        },
+        {
+          "description": "CONFLICTED",
+          "match_any": [
+            "CONFLICTED"
+          ]
+        },
+        {
+          "description": "INELIGIBLE_ESTABLISHED",
+          "match_any": [
+            "INELIGIBLE_ESTABLISHED",
+            "ineligible established",
+            "ineligible-established",
+            "Ineligible (established)"
+          ]
+        },
+        {
+          "description": "INELIGIBLE_PROVISIONAL",
+          "match_any": [
+            "INELIGIBLE_PROVISIONAL",
+            "ineligible provisional",
+            "ineligible-provisional",
+            "Ineligible (provisional)"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          12,
+          16
+        ]
+      },
+      "notes": "Owner's failing question 2 (four passages passed, model declined). States listed on page 12; the final mapping on page 16."
+    },
+    {
+      "id": "AGR-GAP-001",
+      "question": "What does the minimum-cost evidence-gap planner calculate, and what costs does it consider?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "For a non-established verdict it computes the cheapest set of evidence acquisitions whose possible outcomes force a determinate verdict; each acquisition has a cost: farmer effort, fees, travel.",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "cheapest set of acquisitions",
+          "match_any": [
+            "cheapest",
+            "minimum-cost",
+            "minimum cost"
+          ]
+        },
+        {
+          "description": "determinate verdict",
+          "match_any": [
+            "determinate"
+          ]
+        },
+        {
+          "description": "farmer effort",
+          "match_any": [
+            "farmer effort",
+            "effort"
+          ]
+        },
+        {
+          "description": "fees",
+          "match_any": [
+            "fees"
+          ]
+        },
+        {
+          "description": "travel",
+          "match_any": [
+            "travel"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          12,
+          16
+        ]
+      },
+      "notes": "Owner's failing question 3."
+    },
+    {
+      "id": "AGR-FHR-001",
+      "question": "What are the main failure-handling rules when evidence is unavailable, a policy is ambiguous, verification fails or a co-holder withholds consent?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "Unavailable source: evidence stays at its current assurance and the decision is marked stale-risk. Ambiguous clause: the atom is INTERPRETATION_PENDING and dependent verdicts are at most PROVISIONAL. Proof failure: the A2-zk evidence is discarded and the system falls back to the lower level. Withheld consent: CONTINGENT, with the blocker named. Unknown is never converted to eligible.",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "stale-risk",
+          "match_any": [
+            "stale-risk",
+            "stale risk"
+          ]
+        },
+        {
+          "description": "INTERPRETATION_PENDING",
+          "match_any": [
+            "INTERPRETATION_PENDING",
+            "interpretation pending"
+          ]
+        },
+        {
+          "description": "at most provisional",
+          "match_any": [
+            "PROVISIONAL",
+            "provisional"
+          ]
+        },
+        {
+          "description": "falls back to lower level",
+          "match_any": [
+            "lower level",
+            "falls back",
+            "fall back"
+          ]
+        },
+        {
+          "description": "CONTINGENT",
+          "match_any": [
+            "CONTINGENT",
+            "contingent"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          14
+        ]
+      },
+      "notes": "Owner's failing question 4."
+    },
+    {
+      "id": "AGR-COR-002",
+      "question": "What problem does EVIDENT solve?",
+      "answerability": "answerable",
+      "category": "factual",
+      "reference_answer": "Eligibility facts come from heterogeneous evidence of very different reliability and the rules change through GRs and amendments, while existing systems collapse everything into a boolean eligible/not-eligible verdict and do not track which decisions a rule change invalidates.",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "heterogeneous evidence of different reliability",
+          "match_any": [
+            "heterogeneous",
+            "different reliability"
+          ]
+        },
+        {
+          "description": "rules change",
+          "match_any": [
+            "rules themselves change",
+            "rule change",
+            "amendments",
+            "GR amendment",
+            "rules change"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          12
+        ]
+      },
+      "notes": "Owner's question that already worked; check citations and the 'bit temporal' wording (garbled extraction in the old index)."
+    },
+    {
+      "id": "AGR-ASR-001",
+      "question": "What are EVIDENT's assurance levels, from lowest to highest?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "A0 self-declared < A1 extracted from an unverified document (OCR) < A2 issuer-verified document < A3 authoritative registry response under consent.",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "A0 self-declared",
+          "match_any": [
+            "A0"
+          ]
+        },
+        {
+          "description": "A1 OCR",
+          "match_any": [
+            "A1"
+          ]
+        },
+        {
+          "description": "A2 issuer-verified",
+          "match_any": [
+            "A2"
+          ]
+        },
+        {
+          "description": "A3 registry",
+          "match_any": [
+            "A3"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          15
+        ]
+      },
+      "notes": "Assurance lattice (page 15; also sketched on page 14)."
+    },
+    {
+      "id": "AGR-REV-001",
+      "question": "What happens to existing decisions when a new rule version is approved for a scheme?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "Only affected decisions (those whose decisive path or structure the change touches) are re-evaluated under the new version; the new decision is stored without overwriting the old one; if the verdict changes, the farmer is notified and attestations bound to the old decision are invalidated.",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "re-evaluated",
+          "match_any": [
+            "re-evaluate",
+            "re-evaluated",
+            "re-evaluates",
+            "re-evaluation",
+            "recomputed",
+            "recomputation"
+          ]
+        },
+        {
+          "description": "only affected decisions",
+          "match_any": [
+            "affected",
+            "only the affected",
+            "affected decisions"
+          ]
+        },
+        {
+          "description": "notify on verdict change",
+          "match_any": [
+            "notify",
+            "notified",
+            "notification",
+            "notifications",
+            "notifies"
+          ]
+        },
+        {
+          "description": "invalidate attestations",
+          "match_any": [
+            "invalidate",
+            "invalidated",
+            "invalidation",
+            "invalidates"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          17
+        ]
+      },
+      "notes": "Rule-version propagation; pseudo-code on page 17."
+    },
+    {
+      "id": "AGR-REV-002",
+      "question": "Which events trigger revalidation of decisions?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "Rule version changes, evidence expiry, a new 7/12 mutation (Ferfar), and consent withdrawal; they go through the dependency index and only verdict changes are notified.",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "rule version",
+          "match_any": [
+            "rule version",
+            "rule-version"
+          ]
+        },
+        {
+          "description": "evidence expiry",
+          "match_any": [
+            "expiry",
+            "expires",
+            "expired"
+          ]
+        },
+        {
+          "description": "7/12 mutation / Ferfar",
+          "match_any": [
+            "Ferfar",
+            "mutation"
+          ]
+        },
+        {
+          "description": "consent withdrawal",
+          "match_any": [
+            "consent withdrawal",
+            "withdrawal of consent",
+            "consent is withdrawn",
+            "withdrawn consent",
+            "withdraws consent",
+            "withdrawal"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          14
+        ]
+      },
+      "notes": "Evidence-change propagation (workflow step 7)."
+    },
+    {
+      "id": "AGR-JNT-001",
+      "question": "How is the eligible land area computed for a joint holding, and what happens when the shares are not recorded?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "Eligible area is the sum over the farmer's 7/12 entries of share fraction times parcel area; if shares are not recorded the atom is U (unknown), never an equal-split default (equal split only as a labelled what-if).",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "share fraction x parcel area",
+          "match_any": [
+            "share fraction",
+            "own share"
+          ]
+        },
+        {
+          "description": "no equal-split default",
+          "match_any": [
+            "equal-split",
+            "equal split"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          17
+        ]
+      },
+      "notes": "Share arithmetic."
+    },
+    {
+      "id": "AGR-JNT-002",
+      "question": "When can a joint-holding application reach READY_TO_SUBMIT?",
+      "answerability": "answerable",
+      "category": "factual",
+      "reference_answer": "Only when consent evidence from every listed co-holder is at the required assurance; eligible area is the farmer's own share.",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "every listed co-holder",
+          "match_any": [
+            "every listed co-holder",
+            "every co-holder",
+            "all co-holders",
+            "each co-holder",
+            "all listed co-holders"
+          ]
+        },
+        {
+          "description": "required assurance",
+          "match_any": [
+            "required assurance"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          14
+        ]
+      },
+      "notes": "Consent gating."
+    },
+    {
+      "id": "AGR-NUM-001",
+      "question": "What FY2026-27 allocation was announced for Bharat-VISTAAR, and how many central schemes does it cover?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "₹150 crore; 10 central schemes.",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "150 crore",
+          "match_any": [
+            "150 crore"
+          ]
+        },
+        {
+          "description": "10 central schemes",
+          "match_any": [
+            "10 central schemes",
+            "10 schemes",
+            "ten central schemes",
+            "10 central"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          2
+        ]
+      },
+      "notes": "Exact numbers from Part I."
+    },
+    {
+      "id": "AGR-NUM-002",
+      "question": "How many lenders did ULI have as of 12 December 2025, and what figure had Report 2 claimed?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "64 lenders (41 banks and 23 NBFCs) per RBI's report; Report 2 claimed 89 lenders (found only on an exam-prep site).",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "64 lenders",
+          "match_any": [
+            "64"
+          ]
+        },
+        {
+          "description": "Report 2 claimed 89",
+          "match_any": [
+            "89"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          9
+        ]
+      },
+      "notes": "Table row: report claim vs. what was found."
+    },
+    {
+      "id": "AGR-NUM-003",
+      "question": "What rent does the MSKVY 2.0 scheme document specify, and what did Report 2 claim?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "INR 1,25,000 per hectare or 6% of the ready reckoner rate, whichever is higher, with 3% annual escalation (about ₹50,600/acre); Report 2 claimed ₹50,000/acre/yr +3%.",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "1,25,000 per ha",
+          "match_any": [
+            "1,25,000"
+          ]
+        },
+        {
+          "description": "6% of ready reckoner",
+          "match_any": [
+            "6%"
+          ]
+        },
+        {
+          "description": "Report 2: 50,000/acre",
+          "match_any": [
+            "50,000"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          8
+        ]
+      },
+      "notes": "Table comparison with numbers."
+    },
+    {
+      "id": "AGR-SEL-001",
+      "question": "Which alternative architecture was selected as the core, and what happens to E's Aadhaar predicate?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "A (EVIDENT) is the core; E's Aadhaar predicate becomes one optional evidence type within A.",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "A / EVIDENT selected",
+          "match_any": [
+            "A as the core",
+            "Architecture A",
+            "option A",
+            "EVIDENT"
+          ]
+        },
+        {
+          "description": "optional evidence type",
+          "match_any": [
+            "optional evidence type"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          12
+        ]
+      },
+      "notes": "Selection decision (page 12)."
+    },
+    {
+      "id": "AGR-MUL-001",
+      "question": "Which ideas from the two reports were rejected from the final design, and why was Report 2's Independent Claim 1 rejected?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "Rejected: dynamic zk-SNARKs, blockchain registries, in-circuit transliteration, ULPIN-keyed nullifiers, carbon/insurance arbitrage, satellite-determined survival entitlement, Report 2's bundled patent claim and 'world-first' positioning. Claim 1 (ZK + spatial + escrow) bundles three inventions.",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "dynamic zk-SNARKs",
+          "match_any": [
+            "dynamic zk-SNARKs",
+            "Dynamic zk-SNARKs",
+            "dynamic SNARKs"
+          ]
+        },
+        {
+          "description": "blockchain registries",
+          "match_any": [
+            "blockchain"
+          ]
+        },
+        {
+          "description": "bundles three inventions",
+          "match_any": [
+            "three inventions",
+            "Bundles three",
+            "bundled"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          4,
+          21
+        ]
+      },
+      "notes": "Needs two distant pages (inventory table and decision register)."
+    },
+    {
+      "id": "AGR-PVD-001",
+      "question": "Has EVIDENT been shown to reduce real-world benefit rejections for farmers?",
+      "answerability": "answerable",
+      "category": "factual",
+      "reference_answer": "No. User-study outcomes, adoption and real-world rejection reduction are explicitly not claimed; they require a field pilot with consent and ethics approval. All performance statements are hypotheses to be measured.",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "not claimed / needs field pilot",
+          "match_any": [
+            "Not claimed",
+            "not claimed",
+            "field pilot",
+            "hypotheses",
+            "not been shown",
+            "has not been demonstrated",
+            "no field"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          20,
+          22
+        ]
+      },
+      "notes": "Proposed vs. demonstrated: the answer must say it is not demonstrated."
+    },
+    {
+      "id": "AGR-FPR-001",
+      "question": "Since EVIDENT submits applications to MahaDBT automatically, how does it confirm that a sanction was granted?",
+      "answerability": "answerable",
+      "category": "false_premise",
+      "reference_answer": "The premise is wrong: submission is manual, by the farmer or a CSC operator on MahaDBT; MahaDBT is the authoritative decision-maker and EVIDENT never claims sanction.",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "manual submission",
+          "match_any": [
+            "manual",
+            "farmer or CSC",
+            "farmer or a CSC",
+            "no automated submission"
+          ]
+        },
+        {
+          "description": "never claims sanction",
+          "match_any": [
+            "never claims sanction",
+            "does not claim sanction",
+            "authoritative decision-maker",
+            "never claim sanction"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          13,
+          14
+        ]
+      },
+      "notes": "False premise about automated submission."
+    },
+    {
+      "id": "AGR-FPR-002",
+      "question": "Why does EVIDENT treat unknown evidence as eligible so that farmers are not excluded?",
+      "answerability": "answerable",
+      "category": "false_premise",
+      "reference_answer": "It does not: unknown is never converted to eligible; no path maps U or C to an eligible verdict (an invariant tested in the evaluator).",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "never eligible",
+          "match_any": [
+            "never converted to eligible",
+            "no path maps U",
+            "never yields eligible",
+            "never be eligible",
+            "never treated as eligible",
+            "not converted to eligible",
+            "never → eligible"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          14,
+          16
+        ]
+      },
+      "notes": "False premise contradicting the core invariant."
+    },
+    {
+      "id": "AGR-OVL-001",
+      "question": "What states does EVIDENT's application state machine move through?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "DRAFT -> EVIDENCE_PENDING -> CONSENT_PENDING -> READY_TO_SUBMIT -> SUBMITTED (manual) -> PRE_SANCTION_RECORDED -> FULFILMENT_DOCS -> CLOSED / REJECTED.",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "DRAFT",
+          "match_any": [
+            "DRAFT"
+          ]
+        },
+        {
+          "description": "EVIDENCE_PENDING",
+          "match_any": [
+            "EVIDENCE_PENDING"
+          ]
+        },
+        {
+          "description": "CONSENT_PENDING",
+          "match_any": [
+            "CONSENT_PENDING"
+          ]
+        },
+        {
+          "description": "READY_TO_SUBMIT",
+          "match_any": [
+            "READY_TO_SUBMIT"
+          ]
+        },
+        {
+          "description": "CLOSED / REJECTED",
+          "match_any": [
+            "CLOSED",
+            "REJECTED"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          18
+        ]
+      },
+      "notes": "Overlapping terminology: application states vs. verdict states (page 12). Listing verdict states instead is wrong.",
+      "forbidden_strings": [
+        "INDETERMINATE",
+        "INELIGIBLE_PROVISIONAL"
+      ]
+    },
+    {
+      "id": "AGR-OVL-002",
+      "question": "What orchard survival thresholds apply to the Fundkar Falbag scheme?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "Sources conflict: some say 80% in year 1 and 90% in year 2, others 90% irrigated / 80% dryland; the report says to verify against the GR.",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "90% / 80% figures",
+          "match_any": [
+            "90%"
+          ]
+        },
+        {
+          "description": "80%",
+          "match_any": [
+            "80%"
+          ]
+        },
+        {
+          "description": "conflict, verify against GR",
+          "match_any": [
+            "conflict",
+            "conﬂict",
+            "conflicts",
+            "conﬂicts",
+            "verify against the GR",
+            "differ",
+            "disagree"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          9
+        ]
+      },
+      "notes": "Conflicting secondary sources; the answer must not pick one."
+    },
+    {
+      "id": "AGR-ALG-001",
+      "question": "How does EVIDENT combine atom values with AND?",
+      "answerability": "answerable",
+      "category": "factual",
+      "reference_answer": "F dominates; then C; then U; then F~; then T~; T only if all atoms are T.",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "F dominates",
+          "match_any": [
+            "F dominates"
+          ]
+        },
+        {
+          "description": "T only if all atoms are T",
+          "match_any": [
+            "T only if all",
+            "only if all atoms are T",
+            "all atoms are T"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          16
+        ]
+      },
+      "notes": "Formal composition rule."
+    },
+    {
+      "id": "AGR-GAP-002",
+      "question": "What is the complexity of exact gap planning, and what is used for larger rules?",
+      "answerability": "answerable",
+      "category": "multi_fact",
+      "reference_answer": "O(2^K · 2^M · |φ|) with K actions and M upgraded atoms; exact search is cheap for small per-scheme rules, and an ILP is used for larger rules (weighted set-cover variant, NP-hard).",
+      "expected_sources": [
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf"
+      ],
+      "required_facts": [
+        {
+          "description": "O(2^K ...)",
+          "match_any": [
+            "2^K",
+            "2^M"
+          ]
+        },
+        {
+          "description": "ILP for larger rules",
+          "match_any": [
+            "ILP"
+          ]
+        }
+      ],
+      "expected_pages": {
+        "AgriSense_ Research Synthesis, Selected Core Invention, and Roadmap.pdf": [
+          16
+        ]
+      },
+      "notes": "Numeric/formal detail of gap planning."
+    },
+    {
+      "id": "AGR-UNA-001",
+      "question": "What false-positive eligibility rate did EVIDENT achieve in its evaluation?",
+      "answerability": "unanswerable",
+      "category": "related_unanswerable",
+      "reference_answer": null,
+      "expected_sources": [],
+      "required_facts": [],
+      "notes": "Unsupported performance claim: the false-positive rate is a planned metric (H1); no result is reported."
+    },
+    {
+      "id": "AGR-UNA-002",
+      "question": "What Anon Aadhaar proving latency was measured on the team's Android test devices?",
+      "answerability": "unanswerable",
+      "category": "lookalike_unanswerable",
+      "reference_answer": null,
+      "expected_sources": [],
+      "required_facts": [],
+      "notes": "Device measurements are planned (optional H5); the ~30 s figure is PSE's browser average, not a measurement on Android devices.",
+      "forbidden_strings": [
+        "30 s"
+      ]
+    },
+    {
+      "id": "AGR-UNA-003",
+      "question": "How many farmers have used the EVIDENT engine so far?",
+      "answerability": "unanswerable",
+      "category": "related_unanswerable",
+      "reference_answer": null,
+      "expected_sources": [],
+      "required_facts": [],
+      "notes": "No deployment or user study exists (the report says none is implied)."
+    },
+    {
+      "id": "AGR-UNA-004",
+      "question": "How much does MahaVISTAAR-AI charge farmers per query?",
+      "answerability": "unanswerable",
+      "category": "related_unanswerable",
+      "reference_answer": null,
+      "expected_sources": [],
+      "required_facts": [],
+      "notes": "MahaVISTAAR-AI's reach is mentioned; no price is."
+    },
+    {
+      "id": "AGR-UNA-005",
+      "question": "Who won the 2018 FIFA World Cup?",
+      "answerability": "unanswerable",
+      "category": "unrelated",
+      "reference_answer": null,
+      "expected_sources": [],
+      "required_facts": [],
+      "notes": "Nothing related."
+    }
+  ]
+}

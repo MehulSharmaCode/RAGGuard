@@ -1,0 +1,4 @@
+Larkspur Field Sampling Protocol - Version 1
+Effective 1 March 2023.
+
+Collect a duplicate water sample at every 5th station so that laboratory precision can be checked.

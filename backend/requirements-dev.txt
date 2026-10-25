@@ -1,5 +1,5 @@
-# Test and static-check tools, on top of the runtime dependencies.
--r requirements.txt
+# Test and static-check tools, on top of the runtime and evaluation dependencies.
+-r requirements-eval.txt
 pytest==9.1.1
 ruff==0.17.0
 mypy==2.4.0

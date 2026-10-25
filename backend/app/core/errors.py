@@ -82,3 +82,34 @@ class GenerationRateLimitError(AppError):
 class GenerationUpstreamError(AppError):
     status_code = 502
     code = "generation_upstream_error"
+
+
+# --- Evaluation reports and experiment tracking (read-only dashboards) ----------
+class ReportNotFoundError(AppError):
+    status_code = 404
+    code = "report_not_found"
+
+
+class ReportUnreadableError(AppError):
+    status_code = 422
+    code = "report_unreadable"
+
+
+class TrackingDependencyMissingError(AppError):
+    status_code = 503
+    code = "tracking_dependency_missing"
+
+
+class TrackingUnavailableError(AppError):
+    status_code = 503
+    code = "tracking_unavailable"
+
+
+class RunNotFoundError(AppError):
+    status_code = 404
+    code = "run_not_found"
+
+
+class ArtifactNotFoundError(AppError):
+    status_code = 404
+    code = "artifact_not_found"

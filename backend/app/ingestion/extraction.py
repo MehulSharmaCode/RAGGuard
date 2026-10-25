@@ -1,4 +1,9 @@
-"""Text extraction from PDF and TXT files, preserving PDF page numbers."""
+"""Text extraction from PDF and TXT files, preserving PDF page numbers.
+
+PDF pages use layout-aware text (regions separated by blank lines, table rows kept on
+one line; `pdf_layout.py`, D-063) and fall back to pypdf's plain extraction when the
+layout pass is not possible or would lose text. TXT files keep the author's layout.
+"""
 
 from __future__ import annotations
 
@@ -6,11 +11,13 @@ import io
 import logging
 import re
 from dataclasses import dataclass
+from typing import Any
 
 from pypdf import PdfReader
 from pypdf.errors import PdfReadError
 
 from app.core.errors import DocumentExtractionError, EmptyDocumentError
+from app.ingestion.pdf_layout import layout_text
 from app.ingestion.validation import FileType
 
 logger = logging.getLogger(__name__)
@@ -33,6 +40,9 @@ class ExtractedDocument:
 
 _TRAILING_SPACE = re.compile(r"[ \t]+\n")
 _EXCESS_BLANK_LINES = re.compile(r"\n{3,}")
+_ALNUM = re.compile(r"\w")
+# Layout text is used only if it keeps at least this share of the plain text's characters.
+_LAYOUT_MIN_COVERAGE = 0.9
 
 
 def normalize_text(text: str) -> str:
@@ -48,7 +58,7 @@ def extract_pdf(content: bytes) -> ExtractedDocument:
             raise DocumentExtractionError("Password-protected PDFs are not supported.")
         pages: list[PageText] = []
         for index, page in enumerate(reader.pages, start=1):
-            text = normalize_text(page.extract_text() or "")
+            text = _page_text(page)
             if text:
                 pages.append(PageText(page_number=index, text=text))
         total_pages = len(reader.pages)
@@ -66,6 +76,18 @@ def extract_pdf(content: bytes) -> ExtractedDocument:
             "No extractable text was found. Scanned or image-only PDFs are not supported."
         )
     return ExtractedDocument(file_type="pdf", pages=pages, total_pages=total_pages)
+
+
+def _page_text(page: Any) -> str:
+    plain = normalize_text(page.extract_text() or "")
+    try:
+        layout = normalize_text(layout_text(page) or "")
+    except Exception:  # positions are a refinement; never fail a page because of them
+        logger.warning("Layout-aware extraction failed; using plain text for this page")
+        return plain
+    if len(_ALNUM.findall(layout)) < _LAYOUT_MIN_COVERAGE * len(_ALNUM.findall(plain)):
+        return plain
+    return layout
 
 
 def extract_txt(content: bytes) -> ExtractedDocument:

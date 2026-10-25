@@ -73,7 +73,7 @@ describe("parseAnswer", () => {
       interpretation: false,
       segments: [
         { type: "text", text: "Fact A " },
-        { type: "cite", sourceId: "S1" },
+        { type: "cite", sourceIds: ["S1"] },
         { type: "text", text: ". Fact B [S9]." },
       ],
     });
@@ -83,8 +83,36 @@ describe("parseAnswer", () => {
     const blocks = parseAnswer("Stated [S1]. Interpretation: a reading.\n\n- one [S2]\n- **two**\n\n1. first\n2. second", ids);
     expect(blocks.map((b) => b.type)).toEqual(["paragraph", "paragraph", "list", "list"]);
     expect(blocks[1]).toMatchObject({ interpretation: true, segments: [{ type: "text", text: "a reading." }] });
-    expect(blocks[2]).toMatchObject({ ordered: false, items: [[{ type: "text", text: "one " }, { type: "cite", sourceId: "S2" }], [{ type: "strong", text: "two" }]] });
+    expect(blocks[2]).toMatchObject({ ordered: false, items: [[{ type: "text", text: "one " }, { type: "cite", sourceIds: ["S2"] }], [{ type: "strong", text: "two" }]] });
     expect(blocks[3]).toMatchObject({ ordered: true });
+  });
+
+  it("groups adjacent citations so labels never run together", () => {
+    const [block] = parseAnswer("Tests pass [S1][S2]. Leaks [S2], [S1] and [S2] [S9].", ids);
+    expect(block).toMatchObject({
+      segments: [
+        { type: "text", text: "Tests pass " },
+        { type: "cite", sourceIds: ["S1", "S2"] },
+        { type: "text", text: ". Leaks " },
+        { type: "cite", sourceIds: ["S2", "S1"] },
+        { type: "text", text: " and " },
+        { type: "cite", sourceIds: ["S2"] },
+        { type: "text", text: " [S9]." },
+      ],
+    });
+  });
+
+  it("does not merge citations separated by words", () => {
+    const [block] = parseAnswer("A [S1] and B [S1].", ids);
+    expect(block).toMatchObject({
+      segments: [
+        { type: "text", text: "A " },
+        { type: "cite", sourceIds: ["S1"] },
+        { type: "text", text: " and B " },
+        { type: "cite", sourceIds: ["S1"] },
+        { type: "text", text: "." },
+      ],
+    });
   });
 });
 

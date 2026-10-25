@@ -54,6 +54,7 @@ evaluation/reports/
 mlruns/
 mlartifacts/
 mlflow.db
+mlflow.db-*
 
 # Local vector store data
 qdrant_storage/

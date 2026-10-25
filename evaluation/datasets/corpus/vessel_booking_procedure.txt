@@ -1,0 +1,3 @@
+Larkspur Hydrographics - Vessel Booking Procedure
+
+Boats are booked through the FleetDesk system at least 48 hours before the planned trip. A single booking may last at most 3 days. Cancellations must be made by 16:00 on the day before the trip so that the boat can be offered to another team.

@@ -54,16 +54,36 @@ class Settings(BaseSettings):
     chunk_overlap_tokens: int = Field(default=30, ge=0)
     default_top_k: int = Field(default=4, ge=1, le=20)
     max_upload_size_mb: float = Field(default=10.0, gt=0, le=100)
+    # Applies to the sub-unit index (best sub-unit cosine, D-063): 0.35 separated every
+    # needed passage (min 0.357) from 26 unrelated questions (max 0.334) on three benchmarks.
+    # Legacy single-vector collections keep D-052's 0.30 (see retrieval/evidence.py).
     min_retrieval_score: float = Field(default=0.35, ge=-1.0, le=1.0)
 
-    @field_validator("qdrant_url", "gemini_api_key", "qdrant_api_key", mode="before")
+    # --- Developer diagnostics (D-066) ------------------------------------
+    # POST /diagnostics/query lists retrieval candidates, the evidence decision, and
+    # (on request) the raw model reply. Off by default; enable only for local debugging.
+    retrieval_diagnostics: bool = False
+
+    # --- Experiment tracking (evaluation only; never used by the API) ------
+    mlflow_tracking_uri: str | None = None
+    mlflow_experiment_name: str = Field(default="ragguard-evaluation", min_length=1)
+
+    # --- Evaluation files (CLI defaults; read-only for the API's dashboards) --
+    evaluation_dataset_path: Path = REPO_ROOT / "evaluation" / "datasets" / "dataset.json"
+    evaluation_results_dir: Path = REPO_ROOT / "evaluation" / "results"
+
+    @field_validator(
+        "qdrant_url", "gemini_api_key", "qdrant_api_key", "mlflow_tracking_uri", mode="before"
+    )
     @classmethod
     def _blank_to_none(cls, value: object) -> object:
         if isinstance(value, str) and not value.strip():
             return None
         return value
 
-    @field_validator("qdrant_local_path", mode="after")
+    @field_validator(
+        "qdrant_local_path", "evaluation_dataset_path", "evaluation_results_dir", mode="after"
+    )
     @classmethod
     def _resolve_local_path(cls, value: Path) -> Path:
         return value if value.is_absolute() else REPO_ROOT / value

@@ -1,0 +1,43 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 1744 >>
+stream
+BT /F1 18 Tf 1 0 0 1 60 780 Tm (Incident severity matrix) Tj ET BT /F1 10 Tf 1 0 0 1 60 750 Tm (Operations teams classify every production incident with this matrix) Tj ET BT /F1 10 Tf 1 0 0 1 60 738 Tm (before paging anyone. Response time is measured from detection.) Tj ET BT /F1 10 Tf 1 0 0 1 60 700 Tm (Severity) Tj ET BT /F1 10 Tf 1 0 0 1 140 700 Tm (Example) Tj ET BT /F1 10 Tf 1 0 0 1 330 700 Tm (Required action) Tj ET BT /F1 10 Tf 1 0 0 1 480 700 Tm (Response time) Tj ET BT /F1 10 Tf 1 0 0 1 60 676 Tm (SEV-1) Tj ET BT /F1 10 Tf 1 0 0 1 140 676 Tm (Full outage of) Tj ET BT /F1 10 Tf 1 0 0 1 330 676 Tm (Page the on-call lead and) Tj ET BT /F1 10 Tf 1 0 0 1 480 676 Tm (15 minutes) Tj ET BT /F1 10 Tf 1 0 0 1 140 664 Tm (customer logins) Tj ET BT /F1 10 Tf 1 0 0 1 330 664 Tm (open a bridge call) Tj ET BT /F1 10 Tf 1 0 0 1 60 638 Tm (SEV-2) Tj ET BT /F1 10 Tf 1 0 0 1 140 638 Tm (Payments delayed) Tj ET BT /F1 10 Tf 1 0 0 1 330 638 Tm (Notify the duty manager and) Tj ET BT /F1 10 Tf 1 0 0 1 480 638 Tm (4 hours) Tj ET BT /F1 10 Tf 1 0 0 1 140 626 Tm (for one region) Tj ET BT /F1 10 Tf 1 0 0 1 330 626 Tm (post a status update) Tj ET BT /F1 10 Tf 1 0 0 1 60 600 Tm (SEV-3) Tj ET BT /F1 10 Tf 1 0 0 1 140 600 Tm (Single report export) Tj ET BT /F1 10 Tf 1 0 0 1 330 600 Tm (Create a ticket for the) Tj ET BT /F1 10 Tf 1 0 0 1 480 600 Tm (2 working days) Tj ET BT /F1 10 Tf 1 0 0 1 140 588 Tm (failing) Tj ET BT /F1 10 Tf 1 0 0 1 330 588 Tm (owning team) Tj ET BT /F1 10 Tf 1 0 0 1 60 562 Tm (SEV-4) Tj ET BT /F1 10 Tf 1 0 0 1 140 562 Tm (Cosmetic issue in) Tj ET BT /F1 10 Tf 1 0 0 1 330 562 Tm (Add to the backlog) Tj ET BT /F1 10 Tf 1 0 0 1 480 562 Tm (Next release) Tj ET BT /F1 10 Tf 1 0 0 1 140 550 Tm (the admin console) Tj ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 492 >>
+stream
+BT /F1 16 Tf 1 0 0 1 60 780 Tm (Lessons from the 2025 pilot) Tj ET BT /F1 10 Tf 1 0 0 1 60 755 Tm (During the pilot the operations board reviewed SEV-2 incidents every) Tj ET BT /F1 10 Tf 1 0 0 1 60 743 Tm (Thursday. Their average resolution time was 9 hours, and most of the) Tj ET BT /F1 10 Tf 1 0 0 1 60 731 Tm (delay came from waiting for the payment provider. The board recommends) Tj ET BT /F1 10 Tf 1 0 0 1 60 719 Tm (rehearsing the bridge call for SEV-1 incidents twice a year.) Tj ET
+endstream
+endobj
+xref
+0 8
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000121 00000 n 
+0000000218 00000 n 
+0000000344 00000 n 
+0000002140 00000 n 
+0000002266 00000 n 
+trailer
+<< /Size 8 /Root 1 0 R >>
+startxref
+2809
+%%EOF

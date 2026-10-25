@@ -1,0 +1,4 @@
+# Evaluation and experiment tracking (Stage 5), on top of the runtime dependencies.
+# The API itself never imports MLflow; only the evaluation CLI does.
+-r requirements.txt
+mlflow==3.17.1

@@ -1,0 +1,32 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R] /Count 1 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 960 540] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 2224 >>
+stream
+BT /F1 26 Tf 1 0 0 1 300 500 Tm (NORTHWIND CLOUD PLAN OVERVIEW) Tj ET BT /F1 20 Tf 1 0 0 1 60 450 Tm (99.95%) Tj ET BT /F1 10 Tf 1 0 0 1 40 430 Tm (monthly uptime target) Tj ET BT /F1 20 Tf 1 0 0 1 260 450 Tm (3) Tj ET BT /F1 10 Tf 1 0 0 1 230 430 Tm (storage regions in the EU) Tj ET BT /F1 20 Tf 1 0 0 1 460 450 Tm (30 days) Tj ET BT /F1 10 Tf 1 0 0 1 440 430 Tm (deleted-file recovery window) Tj ET BT /F1 14 Tf 1 0 0 1 40 380 Tm (About the plans) Tj ET BT /F1 10 Tf 1 0 0 1 40 355 Tm (Every plan encrypts files at rest and in transit. Upgrades take) Tj ET BT /F1 10 Tf 1 0 0 1 40 343 Tm (effect immediately; downgrades take effect at the start of the next) Tj ET BT /F1 10 Tf 1 0 0 1 40 331 Tm (billing cycle. The public status API is limited to 60 requests per) Tj ET BT /F1 10 Tf 1 0 0 1 40 319 Tm (minute for every customer, independent of the plan.) Tj ET BT /F1 14 Tf 1 0 0 1 40 270 Tm (Billing) Tj ET BT /F1 10 Tf 1 0 0 1 40 245 Tm (Invoices are issued on the first working day of each month and are) Tj ET BT /F1 10 Tf 1 0 0 1 40 233 Tm (payable within 21 days. Annual contracts receive a 12% discount.) Tj ET BT /F1 14 Tf 1 0 0 1 600 380 Tm (Service tiers and limitations) Tj ET BT /F1 10 Tf 1 0 0 1 520 355 Tm (Tier) Tj ET BT /F1 10 Tf 1 0 0 1 640 355 Tm (Limitations) Tj ET BT /F1 10 Tf 1 0 0 1 520 330 Tm (Starter) Tj ET BT /F1 10 Tf 1 0 0 1 640 336 Tm (50 GB storage; no shared folders;) Tj ET BT /F1 10 Tf 1 0 0 1 640 324 Tm (email support only) Tj ET BT /F1 10 Tf 1 0 0 1 520 296 Tm (Team) Tj ET BT /F1 10 Tf 1 0 0 1 640 302 Tm (2 TB storage; API limited to 1,000) Tj ET BT /F1 10 Tf 1 0 0 1 640 290 Tm (requests per minute) Tj ET BT /F1 10 Tf 1 0 0 1 520 262 Tm (Enterprise) Tj ET BT /F1 10 Tf 1 0 0 1 640 268 Tm (No storage cap; audit log retained) Tj ET BT /F1 10 Tf 1 0 0 1 640 256 Tm (for 400 days) Tj ET BT /F1 10 Tf 1 0 0 1 520 228 Tm (Education) Tj ET BT /F1 10 Tf 1 0 0 1 640 234 Tm (Only for accredited schools; single) Tj ET BT /F1 10 Tf 1 0 0 1 640 222 Tm (sign-on not included) Tj ET BT /F1 14 Tf 1 0 0 1 520 160 Tm (Support hours) Tj ET BT /F1 10 Tf 1 0 0 1 520 138 Tm (- Chat: weekdays 08:00-20:00 CET) Tj ET BT /F1 10 Tf 1 0 0 1 520 124 Tm (- Phone: Enterprise only, around the clock) Tj ET
+endstream
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000115 00000 n 
+0000000212 00000 n 
+0000000338 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+2614
+%%EOF

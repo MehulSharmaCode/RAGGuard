@@ -1,0 +1,19 @@
+TideWatch T3 Quick-Start Card
+Larkspur Hydrographics field documentation.
+
+Before you deploy
+1. Charge the battery pack fully. Charging from empty takes about 8 hours with the supplied charger.
+2. Register the buoy serial number in the Larkspur Cloud dashboard and confirm that the LTE-M SIM card is active.
+3. Check that the sensor head is clean and that the anti-fouling wiper moves freely.
+
+Deployment
+Lower the buoy into the water using the lifting eye only; never lift it by the sensor cage. Attach the mooring chain to the bottom shackle and secure the safety pin. The sensor head is rated to a maximum depth of 250 metres; do not deploy it deeper than this.
+
+Power-on and pairing
+Hold the magnetic key against the POWER mark on the hull for 5 seconds. The status light flashes green three times when the buoy has connected to the network. A flashing red light means that there is no network connection: move the buoy closer to the shore station or install the satellite module.
+
+Retrieval
+Before retrieving the buoy, switch it to maintenance mode in the dashboard so that no false alarms are raised. Rinse the sensor head with fresh water after every retrieval and let it dry before storage.
+
+Support
+For technical support, email support@larkspur.example or call the support line on weekdays between 08:00 and 17:00 Central European Time.
