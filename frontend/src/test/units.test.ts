@@ -49,6 +49,28 @@ describe("API client", () => {
     });
   });
 
+  it("uses the page's own origin when VITE_API_BASE_URL is empty (Docker Compose build)", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", "");
+    vi.resetModules();
+    const fetchMock = vi.fn(() => Promise.reject(new TypeError("Failed to fetch")));
+    vi.stubGlobal("fetch", fetchMock);
+    const client = await import("../lib/api/client");
+    expect(client.API_BASE_URL).toBe("");
+    const error = await client.request("/health", { timeoutMs: 1000 }, anything).catch((e: unknown) => e);
+    expect(fetchMock).toHaveBeenCalledWith("/health", expect.anything());
+    expect(error).toMatchObject({ kind: "network", message: expect.stringContaining("through this web server") });
+  });
+
+  it("keeps the development default and names it in network errors", async () => {
+    vi.stubEnv("VITE_API_BASE_URL", undefined as unknown as string);
+    vi.resetModules();
+    vi.stubGlobal("fetch", vi.fn(() => Promise.reject(new TypeError("Failed to fetch"))));
+    const client = await import("../lib/api/client");
+    expect(client.API_BASE_URL).toBe("http://localhost:8000");
+    const error = await client.request("/health", { timeoutMs: 1000 }, anything).catch((e: unknown) => e);
+    expect(error).toMatchObject({ message: expect.stringContaining("at http://localhost:8000") });
+  });
+
   it("times out", async () => {
     vi.stubGlobal(
       "fetch",

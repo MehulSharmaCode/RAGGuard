@@ -430,7 +430,8 @@ export default function ExperimentsView() {
               <>
                 Newest first. Expand a run for its parameters and downloadable reports. These are evaluation runs, not GenAI traces:
                 MLflow&apos;s Traces tab is expected to be empty. To browse the same store in MLflow&apos;s own UI, run{" "}
-                <span className="font-mono text-12">{UI_COMMAND}</span> from the repository root.
+                <span className="font-mono text-12">{UI_COMMAND}</span> from the repository root (this browses the
+                store on the host; the Docker deployment keeps its own store in a volume, see deployment/README.md).
               </>
             }
           >

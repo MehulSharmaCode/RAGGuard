@@ -112,6 +112,7 @@ def _track(
     config = resolve_config(
         args.tracking_uri or settings.mlflow_tracking_uri,
         args.experiment or settings.mlflow_experiment_name,
+        settings.mlflow_artifact_root,
     )
     tags = {**git_revision(), **extra_tags}
     if args.label:

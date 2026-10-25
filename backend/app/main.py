@@ -45,7 +45,11 @@ def _error(status_code: int, code: str, message: str, **extra: object) -> JSONRe
 
 
 def build_tracking_reader(settings: Settings) -> TrackingReader:
-    config = resolve_config(settings.mlflow_tracking_uri, settings.mlflow_experiment_name)
+    config = resolve_config(
+        settings.mlflow_tracking_uri,
+        settings.mlflow_experiment_name,
+        settings.mlflow_artifact_root,
+    )
     return TrackingReader(config, settings.evaluation_results_dir)
 
 

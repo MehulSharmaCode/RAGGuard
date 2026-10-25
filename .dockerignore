@@ -1,0 +1,42 @@
+# Allow-list for the Docker build context (Stage 6). The context is the repository root for
+# both images (deployment/backend.Dockerfile and deployment/frontend.Dockerfile), so
+# nothing enters a build unless it is listed here. That keeps out, by construction:
+#   .git, .env files, .venv, node_modules, frontend/dist, caches,
+#   qdrant_storage/, mlflow.db, mlartifacts/, evaluation/results/, uploads, model files.
+*
+
+# --- Backend ---------------------------------------------------------------
+!backend/requirements.txt
+!backend/requirements-eval.txt
+!backend/requirements-dev.txt
+!backend/pyproject.toml
+!backend/app
+!backend/tests
+
+# --- Evaluation datasets and corpora (read by the evaluation CLI and /system/status) ---
+# Datasets only: generated reports (evaluation/results/) are runtime data, not image content.
+!evaluation/datasets
+
+# --- Frontend ---------------------------------------------------------------
+!frontend/package.json
+!frontend/package-lock.json
+!frontend/index.html
+!frontend/vite.config.ts
+!frontend/tsconfig.json
+!frontend/tsconfig.app.json
+!frontend/tsconfig.node.json
+!frontend/eslint.config.js
+!frontend/public
+!frontend/src
+
+# --- Web server -------------------------------------------------------------
+!deployment/nginx.conf
+
+# --- Excluded even inside the folders above ----------------------------------
+**/__pycache__
+**/*.pyc
+**/*.pyo
+**/.DS_Store
+**/.env
+**/.env.*
+**/*.log

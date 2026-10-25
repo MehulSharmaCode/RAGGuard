@@ -67,13 +67,21 @@ class Settings(BaseSettings):
     # --- Experiment tracking (evaluation only; never used by the API) ------
     mlflow_tracking_uri: str | None = None
     mlflow_experiment_name: str = Field(default="ragguard-evaluation", min_length=1)
+    # Folder for the artifacts of a NEW experiment (default: <repository>/mlartifacts). An
+    # existing experiment keeps the location recorded in its tracking store (Stage 6, D-075).
+    mlflow_artifact_root: Path | None = None
 
     # --- Evaluation files (CLI defaults; read-only for the API's dashboards) --
     evaluation_dataset_path: Path = REPO_ROOT / "evaluation" / "datasets" / "dataset.json"
     evaluation_results_dir: Path = REPO_ROOT / "evaluation" / "results"
 
     @field_validator(
-        "qdrant_url", "gemini_api_key", "qdrant_api_key", "mlflow_tracking_uri", mode="before"
+        "qdrant_url",
+        "gemini_api_key",
+        "qdrant_api_key",
+        "mlflow_tracking_uri",
+        "mlflow_artifact_root",
+        mode="before",
     )
     @classmethod
     def _blank_to_none(cls, value: object) -> object:
@@ -87,6 +95,11 @@ class Settings(BaseSettings):
     @classmethod
     def _resolve_local_path(cls, value: Path) -> Path:
         return value if value.is_absolute() else REPO_ROOT / value
+
+    @field_validator("mlflow_artifact_root", mode="after")
+    @classmethod
+    def _resolve_optional_path(cls, value: Path | None) -> Path | None:
+        return value if value is None or value.is_absolute() else REPO_ROOT / value
 
     @model_validator(mode="after")
     def _check_chunking(self) -> Settings:

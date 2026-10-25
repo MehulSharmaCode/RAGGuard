@@ -2,7 +2,7 @@
 
 Concise current-state reference. For stage details see [`ROADMAP.md`](ROADMAP.md); for decisions see [`DECISIONS.md`](DECISIONS.md); for history see [`PROGRESS_LOG.md`](PROGRESS_LOG.md).
 
-_Last updated: 2026-10-25 (**Stage 5.7 closed: closure pass (prompt v8, evaluator e3, VEIL and AgriSense v1.1.0), checkpoint `e3738ab` pushed to GitHub, the owner's manual acceptance passed; Stages 6–8 pending**). Earlier: 2026-10-18 pause and stabilisation (prompt v7, evaluator e2)._
+_Last updated: 2026-10-26 (**Stage 6 complete and accepted by the owner: Docker Compose deployment — three services, four volumes, host Ollama; committed and pushed; Stages 7–8 pending**). Earlier: 2026-10-25 Stage 5.7 closed (prompt v8, evaluator e3), accepted by the owner; 2026-10-18 pause and stabilisation._
 
 ## Purpose
 
@@ -10,11 +10,13 @@ RAGGuard is a document-based Retrieval-Augmented Generation (RAG) assistant with
 
 ## Current stage
 
+**Stage 6 — Docker and Docker Compose (2026-10-26, owner brief "Stage 6 only"; D-075–D-078)** — complete, accepted, committed and pushed: `compose.yaml` (repository root) starts the whole application: `frontend` (Nginx serving the production build and proxying the API, `127.0.0.1:8080`), `backend` (FastAPI) and `qdrant` (server, own volume); Ollama is the host's. Verified by Claude on the owner's Mac (acceptance table: [`ROADMAP.md`](ROADMAP.md) "Stage 6 acceptance"; evidence: `PROGRESS_LOG.md` 2026-10-26; guide: [`deployment/README.md`](../deployment/README.md)); **the owner's manual acceptance passed on 2026-10-26** (the containerised application starts; AgriSense ingestion and question answering work; SIH retrieval and citations work; selecting only AgriSense stops answers from using SIH evidence; and a backend restart preserves the indexed documents and query behaviour). It is a local/demo deployment, not production-ready. **Stage 7 starts only on the owner's explicit instruction.**
+
 **Stage 5.7 closure (2026-10-25, owner brief "Stage 5.7 only")** — prompt v8 (span withholding, answer check, supersession policy, split-region passages), evaluator e3, two benchmark revisions; all automated stage criteria verified; **the owner's manual acceptance passed on 2026-10-25 — Stage 5.7 is closed** ([`SESSION_HANDOFF.md`](SESSION_HANDOFF.md)). The known limitations below still apply. Stage 6 starts only on the owner's explicit instruction. (Paused 2026-10-18 – 2026-10-25 for the owner's examinations.)
 
 *History:* **Stage 5.5 — Conversation persistence, functional dashboards, and product integration** (owner brief 2026-10-14, D-053): implemented; automated tests and Claude's own browser checks passed. On 2026-10-15 a **pre-demo reliability pass** (owner brief, inside the Stage 5.5 scope) added a second benchmark, prompt v6, and citation grouping; on 2026-10-16 a **retrieval reliability pass** (owner brief, before Docker) changed extraction, chunking, indexing, and the evidence threshold (sections below). On 2026-10-16 **Stage 5.7 — cross-document reliability and conversation isolation** (owner brief) fixed a PDF extraction defect, added hybrid candidate retrieval, a fourth benchmark, and conversations per document context (section below); a **stabilisation pass** (2026-10-16 – 18) investigated the security regressions and residual failures, added prompt v7 (D-067) and evaluator e2 (D-068). **The owner has not manually accepted Stage 5.7, 5.5 (or Stage 5) yet** — that is the next checkpoint (handoff below). **Stage 6 (Docker) has not started.**
 
-Repository: `/Users/mehulsharma/Desktop/Developer/RAGGuard`, branch `main`, local Git only (no remote). One commit (`cc2efb5`, Stage 3 baseline); **all Stage 4, 5, 5.5, pre-demo, retrieval, and Stage 5.7 work is uncommitted**. Nothing has been committed or pushed.
+Repository: `/Users/mehulsharma/Desktop/Developer/RAGGuard`, branch `main`, remote `origin` = `https://github.com/MehulSharmaCode/RAGGuard.git` (public). Commits: `cc2efb5` (Stage 3 baseline), `e3738ab` (Stage 5.7 checkpoint), `b046e76` (Stage 5.7 acceptance record), and `feat: complete Stage 6 Docker deployment` (Stage 6 plus its acceptance record; see `git log`). All of it is pushed.
 
 ## Implemented vs. planned
 
@@ -31,7 +33,7 @@ Repository: `/Users/mehulsharma/Desktop/Developer/RAGGuard`, branch `main`, loca
 | **5.7** | Fragment-safe extraction, hybrid candidates (dense gate, dense-order evidence), AgriSense benchmark (27 cases), conversation threads per document context, opt-in diagnostics | **Implemented (2026-10-16); owner acceptance passed 2026-10-25 (with the closure)** | 336 pytest + 1 xfail + 1 opt-in Ollama test; 74 Vitest; mypy/ruff/tsc/ESLint; build; 8 final tracked runs (+ 16 comparison runs); Claude's Chrome check of threads |
 | **5.7 stab.** | Prompt v7 (labelled instruction-like passages cannot be relayed as a disagreement), evaluator e2 (negation-aware forbidden content, versioned reports), scope regression tests, investigation of AGR / superseded / metric cases | **Implemented (2026-10-18); owner acceptance passed 2026-10-25 (with the closure)** | 347 pytest + 1 xfail + 1 opt-in Ollama test; 74 Vitest; mypy/ruff/tsc/ESLint; build; 8 final tracked runs + 16 judge-off comparison runs; Claude's Chrome check of document-scoped conversations |
 | **5.7 closure** | Prompt v8: instruction-like spans withheld (D-069), supersession policy (D-070), answer check with one repair (D-071), split-region passages (D-072); evaluator e3 (D-073); VEIL 1.1.0, AgriSense 1.1.0 (D-074); test-isolation fix | **Complete (2026-10-25): automatically verified; the owner's manual acceptance passed (2026-10-25)** | 390 pytest + 1 xfail + 1 opt-in Ollama test; 74 Vitest; mypy/ruff/tsc/ESLint; build; 10 tracked runs; Claude's API and Chrome checks on an isolated stack |
-| 6 | Docker and Docker Compose | **Not started** | — |
+| **6** | Docker and Docker Compose: `compose.yaml` + `deployment/` (web/backend/Qdrant server, four volumes, host Ollama), smoke test, guide | **Complete (2026-10-26); owner's manual acceptance passed (2026-10-26)** | Images built and run on Docker Desktop (Apple Silicon); smoke test 14/14; persistence across restarts, `down`/`up`, recreation; in-container full core benchmark 84/85 (same outcomes as the host); 393 pytest + 1 xfail on the host and in the container; Vitest 76 |
 | 7 | GitHub Actions and the automated quality gate | Not started | — |
 | 8 | End-to-end verification, demo, frontend redesign with the owner's references | Not started | — |
 
@@ -235,6 +237,24 @@ Full table, comparability notes, and per-scenario findings: `PROGRESS_LOG.md` (S
 
 All settings from environment / root `.env` via `backend/app/core/config.py`, documented in [`.env.example`](../.env.example). Stage 5.5 added `EVALUATION_DATASET_PATH` and `EVALUATION_RESULTS_DIR` (defaults `evaluation/datasets/dataset.json`, `evaluation/results`; commented out in `.env.example` because an empty value would mean the repository root); the API now also reads `MLFLOW_TRACKING_URI`/`MLFLOW_EXPERIMENT_NAME`. No `.env` exists on the development machine (defaults used). Toolchain: Python 3.13 (`backend/.venv`), Node.js 24 / npm 11.
 
+## Docker deployment (Stage 6)
+
+**Quick start** (from the repository root; Docker Desktop running, Ollama running on the host with `qwen3.5:9b`): `docker compose up -d --build --wait`, open <http://127.0.0.1:8080>, `python3 deployment/smoke_test.py`, stop with `docker compose down` (data stays). **Never `down -v`, `volume prune`, or `system prune --volumes`.** Full guide, configuration table, troubleshooting, backup/restore: [`deployment/README.md`](../deployment/README.md).
+
+| Item | Value |
+| --- | --- |
+| Services | `frontend` (Nginx 1.30, uid 101, `127.0.0.1:${WEB_PORT:-8080}`), `backend` (FastAPI, uid 10001, internal :8000), `qdrant` (v1.19.2, uid 1000, internal :6333); start order health-gated |
+| Images | backend 2.62 GB (PyTorch CPU wheel; `deployment/backend.Dockerfile`, targets `runtime` and `test`), frontend 92.6 MB (`deployment/frontend.Dockerfile`); allow-list `.dockerignore` |
+| Browser ↔ API | same origin: bundle built with empty `VITE_API_BASE_URL`; Nginx proxies `/health /ingest /documents /query /evaluations /experiments /system`; no CORS (D-075) |
+| Generation | host Ollama via `DOCKER_OLLAMA_BASE_URL` (default `http://host.docker.internal:11434`); model never substituted; unavailable/missing reported in `/health` |
+| Volumes | `ragguard_qdrant_storage` (index), `ragguard_hf_cache` (embedding model), `ragguard_mlflow` (`mlflow.db` + `artifacts/`), `ragguard_reports` (evaluation reports) |
+| Host data | never mounted; the Docker index starts **empty** — re-upload documents in the Docker UI |
+| Evaluation | `docker compose run --rm backend python -m app.evaluation.run_evaluation …` (embedded temporary store in the one-off container; the Qdrant server is untouched) |
+| Status | `/system/status` → `containers`: `healthy` in the stack, `configured` on the host |
+| Differences from the host flow | separate data; Qdrant server instead of embedded; Linux/CPU embeddings; ports 8080 (not 5173/8000); runs tagged `git_commit: unavailable` |
+
+**Known limitations (Stage 6):** retrieval is not bit-identical across engines/platforms — dense scores agree to < 4·10⁻⁷ and no gate decision differs, but lexical tie-ordering changed the last evidence slot for 1/173 benchmark questions (server vs embedded) and 2/173 (macOS vs Linux) (D-078); the accepted Stage 5.7 benchmark numbers were measured on the embedded store; linux/amd64, Linux hosts, Windows and an in-place volume restore are untested; no TLS, authentication, or scaling (local/demo deployment); `Default` MLflow experiment folder is read-only and unused.
+
 ## Checks
 
 **Run during the Stage 5.5 implementation (2026-10-14; details in `PROGRESS_LOG.md`):**
@@ -250,6 +270,8 @@ All settings from environment / root `.env` via `backend/app/core/config.py`, do
 | Real endpoints on repository data | 17 reports, 15 runs, correct states, no absolute paths in responses, `mlflow.db` unchanged |
 | Claude's Chrome check (real backend on a temporary Qdrant store, real Ollama, Vite dev server) | upload; a question pending during navigation completed once; all three views populated with real data; citation opened after navigation and after reload; no horizontal page scroll at 1440, ~500 and 360 px (dark and light); no application errors in the console |
 | Fault isolation (second API instance with Ollama unreachable and a missing tracking store) | only generation → `unavailable` and tracking → `configured` (`no_store`); other components unchanged; the missing store was not created |
+
+**Stage 6 (2026-10-26):** host pytest 393 passed / 1 xfailed / 1 deselected, `pytest -m ollama` also passed inside a container; the same suite inside the `test` image: 393 passed / 1 xfailed with the model cache mounted read-only (377 passed + 17 skipped without it); ruff, format, mypy (59 files) clean on the host and in the container; Vitest 76 passed, `tsc`, ESLint, build clean; `docker compose config -q` valid; `docker build --check` clean; smoke test 14/14; persistence, parity, failure-mode, dashboard and backup/restore checks in `PROGRESS_LOG.md`. Not run: Lighthouse/contrast, Gemini, amd64.
 
 **Stage 5.7 closure (2026-10-25):** pytest 390 passed / 1 xfailed / 1 deselected; `pytest -m ollama` 1 passed; ruff, format, mypy (59 files) clean; `tsc`, ESLint clean; Vitest 74 passed; build succeeded (main 95.46 kB gzip); `--validate-only` four datasets; 10 final tracked runs (v8, e3, judge on) + targeted repeats and one prompt experiment (scratchpad); API and Chrome checks on an isolated stack (API 8013 / Vite 5174, temporary Qdrant); no console errors. Not run: Lighthouse/contrast re-audit; Gemini.
 
@@ -276,11 +298,12 @@ All settings from environment / root `.env` via `backend/app/core/config.py`, do
 | `evaluation/datasets/` | core `dataset.json` v2.0.0, `corpus/` (42 docs), README; `veil/` (VEIL benchmark v1.0.0, 4 corpus files); `structure/` (structural benchmark v1.0.0, 7 corpus files, `build_pdf_fixtures.py`); `agrisense/` (AgriSense benchmark v1.0.0, 1 PDF) |
 | `evaluation/results/` | generated reports per run (git-ignored; 50 preserved) |
 | `mlflow.db`, `mlartifacts/` | local MLflow store (git-ignored) |
-| `deployment/`, `.github/workflows/` | Stages 6–7 (empty) |
+| `compose.yaml`, `deployment/`, `.dockerignore` | Stage 6: the Compose stack, `backend.Dockerfile`, `frontend.Dockerfile`, `nginx.conf`, `smoke_test.py`, `README.md` (operating guide) |
+| `.github/workflows/` | Stage 7 (empty placeholder only) |
 
 ## Next action
 
-Stage 5.7 is closed (manual acceptance passed 2026-10-25; checklist kept in [`SESSION_HANDOFF.md`](SESSION_HANDOFF.md) §4 for re-checks). Next: Stage 6 (Docker and Docker Compose) **only on the owner's explicit instruction**; Stages 7 and 8 remain pending.
+Stage 6 is complete and accepted (2026-10-26); the quick start below reproduces it. Next: Stage 7 (GitHub Actions) **only on the owner's explicit instruction**; Stage 8 remains pending.
 
 ## Manual-testing handoff (for the owner)
 

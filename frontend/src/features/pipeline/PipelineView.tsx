@@ -269,7 +269,7 @@ export default function PipelineView() {
       <Section id="planned-title" title="Not built yet">
         <Planned status={data} />
         <p className="mt-3 text-12 text-ink-500">
-          No CI workflow, quality gate, image build, or deployment exists yet, so none is shown here.
+          No CI workflow, quality gate, or automated release exists yet, so no CI runs, builds, or deployments are shown here.
         </p>
       </Section>
     </div>

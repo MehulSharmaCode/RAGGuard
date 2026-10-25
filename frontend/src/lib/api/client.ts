@@ -6,6 +6,8 @@
 
 import type { ApiErrorBody, ApiErrorDetail } from "../../types/api";
 
+// An empty VITE_API_BASE_URL is honoured on purpose: requests then go to the page's own origin,
+// which is how the Docker Compose deployment reaches the API (Nginx proxies it; Stage 6, D-075).
 export const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000").replace(
   /\/+$/,
   "",
@@ -99,7 +101,7 @@ export async function request<T>(
     if (options.signal?.aborted) throw new ApiError("aborted", "The request was cancelled.");
     throw new ApiError(
       "network",
-      `Cannot reach the RAGGuard API at ${API_BASE_URL}. Check that the backend is running.`,
+      `Cannot reach the RAGGuard API ${API_BASE_URL ? `at ${API_BASE_URL}` : "through this web server"}. Check that the backend is running.`,
     );
   } finally {
     clearTimeout(timer);

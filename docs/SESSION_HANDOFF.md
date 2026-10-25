@@ -1,17 +1,20 @@
 # RAGGuard — Session Handoff
 
-_Written 2026-10-25 at the end of the Stage 5.7 closure; updated 2026-10-25 after the owner's manual acceptance (Stage 5.7 closed). This is the single handoff; current state lives in [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md), stage status in [`ROADMAP.md`](ROADMAP.md), decisions in [`DECISIONS.md`](DECISIONS.md), history in [`PROGRESS_LOG.md`](PROGRESS_LOG.md) (entry 2026-10-25)._
+_Written 2026-10-25 at the end of the Stage 5.7 closure; updated 2026-10-25 after the owner's manual acceptance (Stage 5.7 closed); updated 2026-10-26 after Stage 6 (Docker) and the owner's manual acceptance of it. This is the single handoff; current state lives in [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md), stage status in [`ROADMAP.md`](ROADMAP.md), decisions in [`DECISIONS.md`](DECISIONS.md), history in [`PROGRESS_LOG.md`](PROGRESS_LOG.md) (entry 2026-10-25)._
 
-> **No later stage may start without the owner's explicit authorisation.** Stage 6 (Docker), Stage 7 (CI/CD), and Stage 8 (redesign) are **not started**: no Dockerfile, Compose file, workflow, or redesign work exists. Do not launch Docker.
+> **No later stage may start without the owner's explicit authorisation.** Stage 7 (CI/CD) and Stage 8 (redesign) are **pending and not started**: no workflow exists (`.github/workflows/` holds only a placeholder) and no redesign work exists. Stage 6 (Docker) is complete (section 6). Never run `docker compose down -v`, `docker volume prune`, or `docker system prune --volumes`; do not start Docker Desktop on the owner's behalf without being asked.
 
 ## 1. Status
+
+**Stage 6 — Docker and Docker Compose: closed, manual acceptance passed (2026-10-26).** `compose.yaml` + `deployment/` run the whole application in containers. Automated and runtime evidence: section 6 and the acceptance table in `ROADMAP.md`. Manual acceptance: the owner reported on 2026-10-26 that Stage 6 passed their manual acceptance on their Mac: the containerised application starts; AgriSense ingestion and question answering work; SIH retrieval and citations work; selecting only AgriSense stops answers from using SIH evidence; and a backend restart preserves the indexed documents and query behaviour. Item-by-item results were reported by the owner and are not recorded in more detail here. It is a local/demo deployment, not production-ready (known limitations in section 6). Stage 5.7 below stays accepted (unchanged).
+
 
 **Stage 5.7 — closed: manual acceptance passed (2026-10-25).** All automated stage criteria were verified on 2026-10-25 (`ROADMAP.md`, "Stage 5.7 closure"), and the owner reported on 2026-10-25 that the local manual acceptance checks passed, with the application running and the tested functionality working as expected (item-by-item results were not recorded in this repository). The known limitations in §3 still apply; passing these checks does not mean every possible security vulnerability is eliminated. The owner's acceptance of Stages 5 and 5.5 was not stated separately and remains recorded as pending. **Stages 6, 7, and 8 are pending and start only on the owner's explicit instruction.**
 
 - Versions: prompt **v8** (`backend/app/generation/prompts.py`), evaluator **e3** (`EVALUATOR_VERSION`, `backend/app/evaluation/metrics.py`), index format **hybrid**, `MIN_RETRIEVAL_SCORE` 0.35, model `qwen3.5:9b` (Ollama), embeddings `all-MiniLM-L6-v2`, top-k 4.
 - Datasets: core `ragguard-synthetic` 2.0.0 (`858e2d41…`), VEIL 1.1.0 (`4a4cb9a2…`), structural 1.0.0 (`e65ce1bb…`), AgriSense 1.1.0 (`963e3cd4…`).
-- Git: branch `main`, remote `origin` = `https://github.com/MehulSharmaCode/RAGGuard.git` (public). The accepted Stage 5.7 code is commit `e3738ab` ("chore: checkpoint Stage 5.7 before manual acceptance"), pushed to `origin/main` on 2026-10-25. The acceptance records in the docs were added afterwards and are committed only when the owner asks.
-- Nothing is left running by Claude (the isolated test servers on 8013/5174 were stopped; Docker Desktop was quit).
+- Git: branch `main`, remote `origin` = `https://github.com/MehulSharmaCode/RAGGuard.git` (public). Stage 5.7 code is commit `e3738ab`, its acceptance record `b046e76` (both pushed 2026-10-25). Stage 6 is committed as `feat: complete Stage 6 Docker deployment` (see `git log`) and pushed to `origin/main` with the acceptance records; nothing from it is left uncommitted.
+- Nothing is left running by Claude: the Compose stack was stopped with `docker compose down` (the four data volumes and the images remain); Docker Desktop itself was started by the owner and is theirs to quit. The owner's own backend (8000), Vite (5173) and Ollama (11434) were never touched.
 
 ## 2. What the closure changed (details: D-069–D-074)
 
@@ -99,6 +102,33 @@ Results can differ slightly between runs (local model). A fallback where an answ
 
 ## 5. Next steps (in order)
 
-1. ~~The owner performs §4~~ — done: passed 2026-10-25.
-2. Commit and push the acceptance records only when the owner asks.
-3. **Stage 6 (Docker and Docker Compose) only on the owner's explicit instruction**; Stages 7 and 8 follow, each on instruction. The open issues in §3 carry over (none blocked acceptance). Preserve the invariants in `CLAUDE.md` (one pipeline; evaluation in temporary stores; layered injection mitigations incl. v8 withholding and the answer check; `/query` contract; dense gate and dense-score order; read-only dashboards; conversation scoping).
+1. ~~The owner runs the Docker quick start~~ — done: Stage 6 passed manual acceptance on 2026-10-26.
+2. ~~Commit and push Stage 6~~ — done (`feat: complete Stage 6 Docker deployment`).
+3. **Stage 7 (GitHub Actions and the quality gate) only on the owner's explicit instruction**; Stage 8 follows, also on instruction. Preserve the invariants in `CLAUDE.md` (one pipeline; evaluation in temporary stores; layered injection mitigations incl. v8 withholding and the answer check; `/query` contract; dense gate and dense-score order; read-only dashboards; conversation scoping; the Docker invariants: same-origin proxy, own Docker index, host data never mounted, no destructive volume commands).
+
+## 6. Stage 6 — Docker deployment (2026-10-26)
+
+**Start / use / stop** (repository root; Docker Desktop running; Ollama running on the host with `qwen3.5:9b`):
+
+```bash
+docker compose up -d --build --wait      # first time ≈ 8 min (builds, downloads); later seconds
+open http://127.0.0.1:8080               # the app (own, empty index: re-upload documents)
+python3 deployment/smoke_test.py         # expect: 14 passed, 0 failed, 0 skipped
+docker compose logs -f backend
+docker compose down                      # stop; volumes (your Docker data) stay
+```
+
+| What | Where |
+| --- | --- |
+| Guide, configuration table, troubleshooting, backup/restore | [`deployment/README.md`](../deployment/README.md) |
+| Services | `frontend` Nginx (host `127.0.0.1:8080`), `backend` FastAPI, `qdrant` server — the last two have no host port |
+| Volumes | `ragguard_qdrant_storage`, `ragguard_hf_cache`, `ragguard_mlflow`, `ragguard_reports` |
+| Generation | host Ollama via `DOCKER_OLLAMA_BASE_URL` (default `http://host.docker.internal:11434`) |
+| Evaluation | `docker compose run --rm backend python -m app.evaluation.run_evaluation --skip-judge --limit 6` (embedded temporary store; never the Qdrant server) |
+| Decisions | D-075 (topology, same-origin proxy, configuration), D-076 (data), D-077 (images), D-078 (parity) |
+
+**State left in Docker:** images `ragguard-backend:local` (2.62 GB), `ragguard-frontend:local` (92.6 MB), `qdrant/qdrant:v1.19.2-unprivileged`, `alpine:3`; the four volumes; the Qdrant collection `ragguard_chunks` (empty — all synthetic test documents were deleted by ID); three evaluation runs produced in the container (two 6-case smoke runs, one full core benchmark 84/85) in the `reports` and `mlflow` volumes — real outputs, harmless, visible in the Evaluation and Experiments views of the Docker stack. Another project's Docker resources (`eventflow-ai-*`) were not touched.
+
+**Open issues (none blocks local use):** [low] retrieval is not bit-identical across engines/platforms (dense scores agree; lexical last-slot ordering differed for 1/173 and 2/173 benchmark questions, D-078); [low] amd64, Linux/Windows hosts and an in-place volume restore are untested; [low] no TLS/authentication/scaling (local deployment only); [low] the first backend build downloads ≈ 2 GB and the PyTorch CPU wheel from PyTorch's own index.
+
+**Not done (Stage 6 scope):** no commit or push, no GitHub Actions workflow, no UI redesign (three UI sentences/messages changed because they were wrong in a deployed stack).

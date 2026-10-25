@@ -7,6 +7,7 @@ Capabilities that do not exist yet are listed as `not_implemented`, never as hea
 
 from __future__ import annotations
 
+import os
 import threading
 from datetime import UTC, datetime
 from pathlib import Path
@@ -26,6 +27,30 @@ def _component(
     id_: str, label: str, state: str, detail: str, verified: bool = True
 ) -> ComponentStatus:
     return ComponentStatus(id=id_, label=label, state=state, detail=detail, verified=verified)  # type: ignore[arg-type]
+
+
+# Set by deployment/backend.Dockerfile; the only signal that this process runs in the
+# Docker Compose deployment (Stage 6, D-075). Nothing is inferred from the file system.
+RUNTIME_ENV = "RAGGUARD_RUNTIME"
+
+
+def containers_component() -> ComponentStatus:
+    label = "Docker / Docker Compose"
+    if os.environ.get(RUNTIME_ENV) == "docker":
+        return _component(
+            "containers",
+            label,
+            "healthy",
+            "This API process runs inside the Docker Compose deployment (deployment/README.md).",
+        )
+    return _component(
+        "containers",
+        label,
+        "configured",
+        "A Docker Compose deployment is provided (compose.yaml, deployment/), but this API "
+        "process runs directly on the host, not in a container.",
+        verified=False,
+    )
 
 
 def dataset_component(path: Path) -> ComponentStatus:
@@ -131,15 +156,7 @@ def build_status(
     readable = [r for r in listing.reports if r.readable]
     tracked = tracking.list_runs().tracking
     components.append(tracking_component(tracked))
-    components.append(
-        _component(
-            "containers",
-            "Docker / Docker Compose",
-            "not_implemented",
-            "Container packaging is planned for Stage 6; nothing is containerised yet.",
-            verified=False,
-        )
-    )
+    components.append(containers_component())
     components.append(
         _component(
             "ci",

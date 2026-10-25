@@ -11,11 +11,11 @@ Authoritative stage status. A stage is marked **Complete** only after every comp
 | 5 | Evaluation hardening, RAG reliability/security, and MLflow tracking (redefined 2026-10-14, D-047) | Complete (2026-10-14) — automated verification done; owner's manual run pending |
 | 5.5 | Conversation persistence, functional dashboards, and product integration (inserted 2026-10-14, D-053) | Implemented and automatically verified (2026-10-14); pre-demo pass 2026-10-15 and retrieval reliability pass 2026-10-16 (below) — **owner's manual acceptance pending** |
 | 5.7 | Cross-document reliability and conversation isolation (owner brief 2026-10-16; D-064–D-066), stabilisation 2026-10-16–18 (D-067, D-068), closure 2026-10-25 (D-069–D-074) | **Complete (2026-10-25)** — automated stage criteria verified (below) and **the owner's manual acceptance passed (2026-10-25)**; residual failures documented |
-| 6 | Docker and Docker Compose integration | Not started |
+| 6 | Docker and Docker Compose integration (D-075–D-078) | **Complete (2026-10-26)** — every feasible criterion of the acceptance gate evidenced (below) and **the owner's manual acceptance passed (2026-10-26)**; linux/amd64, Linux hosts and an in-place volume restore untested (documented) |
 | 7 | GitHub Actions testing and automated quality gate | Not started |
 | 8 | End-to-end integration, verification, documentation, and demonstration preparation | Not started |
 
-**2026-10-25:** Stage 5.7 closed — closure pass (owner brief, Stage 5.7 only), checkpoint commit `e3738ab` pushed to GitHub, and the owner's manual acceptance passed. **Next: Stage 6 only on the owner's explicit instruction.** (2026-10-18: paused for the owner's examinations.)
+**2026-10-26:** Stage 6 (Docker) implemented, verified (below), and accepted by the owner; committed as `feat: complete Stage 6 Docker deployment`. **Next: Stage 7 only on the owner's explicit instruction.** (2026-10-25: Stage 5.7 closed — closure pass, checkpoint `e3738ab`, the owner's manual acceptance passed.)
 
 ---
 
@@ -255,12 +255,55 @@ Details: `PROGRESS_LOG.md` 2026-10-25, D-069–D-074. No Docker, CI, or redesign
 
 ## Stage 6 — Docker and Docker Compose integration
 
-**Tasks**
+**Tasks (planned)**
 - Dockerfiles for backend and frontend; Docker Compose with Qdrant (and MLflow if self-hosted).
 - Configuration via environment; health checks; persistent volumes for local data.
 
-**Completion criteria**
-- `docker compose up` starts the full stack from a clean checkout plus `.env`, and the workspace flow works end-to-end in containers.
+**Completion criterion (planned):** `docker compose up` starts the full stack from a clean checkout plus `.env`, and the workspace flow works end-to-end in containers.
+
+**Delivered (2026-10-26, owner brief "Stage 6 only"; D-075–D-078; guide: [`deployment/README.md`](../deployment/README.md))**
+- `compose.yaml` (root): `frontend` (Nginx, `127.0.0.1:8080`, serves the production build and proxies the API same-origin), `backend` (FastAPI), `qdrant` (server 1.19.2); Ollama stays on the host; no MLflow server. Four named volumes. Health-gated start order.
+- `deployment/{backend.Dockerfile, frontend.Dockerfile, nginx.conf, smoke_test.py, README.md}`, allow-list `.dockerignore`, Docker section in `.env.example`. Narrow application changes: `MLFLOW_ARTIFACT_ROOT`, an honest `containers` status, an empty-API-base error message, two UI sentences. No API schema changed; no commit, push, CI, or redesign.
+- Images: backend 2.62 GB (PyTorch CPU wheel; the first build with PyPI's CUDA wheel was 10.3 GB), frontend 92.6 MB.
+
+### Stage 6 acceptance (owner brief §16)
+
+| # | Criterion | Evidence (details: `PROGRESS_LOG.md` 2026-10-26) | Status |
+| --- | --- | --- | --- |
+| A1 | One canonical Compose configuration, validates | `docker compose config -q` valid (also with `.env.example` as env file) | Verified |
+| A2 | Backend and frontend images build | Built twice via Compose (7 min 38 s / 1 min 19 s rebuild), rebuilt again with the UI text changes; `docker build --check` clean | Verified |
+| A3 | Works on the available platform, or documented limitation | linux/arm64 on Apple Silicon verified; amd64/Linux/Windows untested (documented) | Verified for arm64; limitation documented |
+| A4 | No embedded credentials | Build history and filesystem scanned (0 secret-like words, 0 host paths, 0 `.env`/key/db files); `GEMINI_API_KEY` only a runtime variable; no build args carry secrets | Verified |
+| A5 | Build contexts exclude local data | Allow-list `.dockerignore`; contexts 3.18 MB / 0.52 MB | Verified |
+| B1 | Services start and become healthy | `up -d`: Qdrant → backend → frontend healthy in 20 s; also after restarts, `down`/`up`, recreation | Verified |
+| B2 | Frontend accessible; backend reachable | Smoke test 14/14; browser | Verified |
+| B3 | Browser requests reach the API; CORS/API URL correct | Same-origin proxy; bundle has no `localhost:8000`; fresh browser load: no console messages, all 200/304; downloads resolve to the web origin | Verified |
+| B4 | Ollama and embeddings verified | Answers generated through `host.docker.internal`; opt-in Ollama test passes inside a container; model downloaded into the cache volume; `HF_HUB_OFFLINE=1` run | Verified |
+| C1 | Synthetic document uploaded and indexed | API (smoke test) and browser upload | Verified |
+| C2 | Grounded answer with a valid source | "17 days [S1]" / "45 days [S1]" citing the document; cited passage contains the fact | Verified |
+| C3 | Unrelated question → fallback | `below_threshold`, model not called (API and UI) | Verified |
+| C4 | Frontend renders answer, citations, fallback | Browser: answer, `[S1]` marker, evidence panel, fallback panel | Verified |
+| C5 | Document management and dashboards operational | Upload/list/delete; Evaluation, Experiments (list, detail, compare, downloads), Pipeline, `/system/status` | Verified |
+| D1 | Qdrant survives backend restarts | Same document ID verified after `restart backend` | Verified |
+| D2 | Qdrant survives Qdrant restart and Compose down/up | Verified after `restart qdrant`, `down` + `up`, and `--force-recreate` | Verified |
+| D3 | MLflow database and artifact paths valid and persistent | Experiment location `file:///data/mlflow/artifacts` in the volume; runs and all three artifacts re-read after recreating the backend | Verified |
+| D4 | Evaluation reports stored and accessible | `/data/reports` volume; listed, opened, downloaded through the web port after recreation | Verified |
+| D5 | Model cache verified | 88 MB in `hf_cache`, reused across recreation; offline run works; first-run download documented | Verified |
+| D6 | Host development index and data untouched | `mlflow.db` hash, `qdrant_storage/` manifest, `mlartifacts/`/`results` counts identical to the pre-build baseline | Verified |
+| D7 | No destructive volume operations | No `down -v`/prune; only the throw-away `ragguard_restore_check` volume removed | Verified |
+| E1 | Relevant tests and checks executed | Host: pytest 393 + 1 xfail, ruff/format/mypy, Vitest 76, tsc, ESLint, build. Container: 393 + 1 xfail (with the cache volume mounted read-only), ruff/format/mypy | Verified |
+| E2 | Evaluation runner isolated from the active store | Qdrant collections/points identical before and after container runs; `isolated_store` forces an embedded temporary store | Verified |
+| E3 | Docker configuration and commands documented | `deployment/README.md`, `README.md` | Verified |
+| E4 | Troubleshooting and recovery documented | 17 rows with exact messages; tested backup/restore | Verified (in-place restore not exercised) |
+| E5 | Final diff contains only Stage 6 changes | 20 modified files (5 backend app + 2 backend test files, 3 frontend + 1 frontend test file, `.env.example`, `CLAUDE.md`, `README.md`, 6 docs) and 7 new files (`compose.yaml`, `.dockerignore`, 5 under `deployment/`); the progress log lists them | Verified |
+| E6 | Documentation matches observed behaviour | Commands and messages copied from runs | Verified |
+| E7 | No CI/CD or UI redesign | None; three UI sentences/messages only | Verified |
+
+**Owner's manual acceptance (2026-10-26): passed.** The owner reported on 2026-10-26 that Stage 6 passed their manual acceptance on their Mac: the containerised application starts; AgriSense ingestion and question answering work; SIH retrieval and citations work; selecting only AgriSense stops answers from using SIH evidence; and a backend restart preserves the indexed documents and query behaviour. No additional tests were run when this was recorded.
+
+**Results unchanged by containerisation:** full core benchmark in the container 84/85 (same failure UNA-REL-005, same outcome on all 85 cases), 0/32 attacks; retrieval parity on 173 questions: dense scores equal to 4·10⁻⁷, no gate decision differs; lexical ordering differs in the last evidence slot for 1/173 (server vs embedded) and 2/173 (macOS vs Linux) — D-078.
+
+**Not covered / residual:** linux/amd64 and Linux/Windows hosts; replacing a live volume in place; running a benchmark against the Qdrant server (the CLI isolates by design); production concerns (TLS, authentication, scaling) — out of scope for a local deployment.
 
 ## Stage 7 — GitHub Actions testing and automated quality gate
 

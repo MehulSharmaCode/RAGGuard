@@ -1,6 +1,6 @@
 # RAGGuard
 
-> **Status: under development (Stage 5.7 closure, 2026-10-25).** Stages 1–5 are complete; Stage 5.5 and Stage 5.7 (cross-document reliability, conversation isolation, its stabilisation, and the 2026-10-25 closure pass: prompt v8, evaluator e3) are implemented and automatically verified; **Stage 5.7 is closed: the owner's manual acceptance passed on 2026-10-25** (the owner's acceptance of Stages 5 and 5.5 was not recorded separately). Stages 6–8 are pending and start only on the owner's instruction. The backend ingests PDF/TXT files, answers questions with cited sources through a local LLM, and falls back safely when evidence is insufficient, with layered prompt-injection mitigations; the web frontend provides the document workspace (whose conversation survives navigation and reloads of the tab), the Evidence Trace, and Evaluation, Experiments, and Pipeline views on real data; an offline evaluation suite (the 85-case core benchmark incl. 31 prompt-injection scenarios, plus separate VEIL Document Challenge (20 cases), structural (41) and AgriSense (27) benchmarks) measures the same pipeline, writes JSON/Markdown reports, and logs runs to MLflow. There is no Docker setup or CI gate yet, and the visual redesign is pending. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the authoritative stage status.
+> **Status: under development (Stage 6 complete and accepted, 2026-10-26).** Stages 1–5 are complete; Stage 5.5 and Stage 5.7 (cross-document reliability, conversation isolation, its stabilisation, and the 2026-10-25 closure pass: prompt v8, evaluator e3) are implemented and automatically verified; **Stage 5.7 is closed: the owner's manual acceptance passed on 2026-10-25** (the owner's acceptance of Stages 5 and 5.5 was not recorded separately). Stages 6–8 are pending and start only on the owner's instruction. The backend ingests PDF/TXT files, answers questions with cited sources through a local LLM, and falls back safely when evidence is insufficient, with layered prompt-injection mitigations; the web frontend provides the document workspace (whose conversation survives navigation and reloads of the tab), the Evidence Trace, and Evaluation, Experiments, and Pipeline views on real data; an offline evaluation suite (the 85-case core benchmark incl. 31 prompt-injection scenarios, plus separate VEIL Document Challenge (20 cases), structural (41) and AgriSense (27) benchmarks) measures the same pipeline, writes JSON/Markdown reports, and logs runs to MLflow. **Stage 6 added a Docker Compose deployment, which passed the owner's manual acceptance on 2026-10-26** (web UI + API + Qdrant server with persistent volumes; Ollama stays on the host — see "Running with Docker" below); there is no CI gate yet, and the visual redesign is pending. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for the authoritative stage status.
 
 RAGGuard is a quality-gated Retrieval-Augmented Generation (RAG) application. Upload PDF or TXT documents, ask questions about them, and get answers grounded in retrieved evidence, with references to the source document and page.
 
@@ -71,9 +71,10 @@ RAGGuard/
 ├── frontend/      React + TypeScript client (Stage 3)
 ├── backend/       FastAPI service and RAG pipeline (Stage 2)
 ├── evaluation/    Version-controlled evaluation dataset and corpus; generated results (git-ignored)
-├── deployment/    Deployment configuration (Stage 6+)
+├── compose.yaml   Docker Compose stack (Stage 6)
+├── deployment/    Dockerfiles, Nginx config, smoke test, operating guide (Stage 6)
 ├── docs/          Project context, roadmap, decisions, log, architecture, UI spec
-└── .github/       CI workflows (Stage 7)
+└── .github/       CI workflows (Stage 7; placeholder only)
 ```
 
 ## Documentation
@@ -81,6 +82,7 @@ RAGGuard/
 - [`CLAUDE.md`](CLAUDE.md) — working rules for AI-assisted development sessions
 - [`docs/PROJECT_CONTEXT.md`](docs/PROJECT_CONTEXT.md) — current state
 - [`docs/SESSION_HANDOFF.md`](docs/SESSION_HANDOFF.md) — current handoff: status, open issues, manual acceptance checklist, next steps
+- [`deployment/README.md`](deployment/README.md) — Docker deployment guide: configuration, persistence, troubleshooting, backup
 - [`docs/ROADMAP.md`](docs/ROADMAP.md) — stages and completion criteria
 - [`docs/DECISIONS.md`](docs/DECISIONS.md) — decision record
 - [`docs/PROGRESS_LOG.md`](docs/PROGRESS_LOG.md) — chronological history
@@ -110,6 +112,19 @@ backend/.venv/bin/mlflow ui --backend-store-uri sqlite:///mlflow.db --host 127.0
 ```
 
 Open <http://localhost:5173>. The top bar shows whether the backend is reachable and which model it uses. The Evaluation and Experiments views read `evaluation/results/` and `mlflow.db` through the API; MLflow's own UI is not required for them. The Stage 5.7 manual acceptance checklist (passed by the owner on 2026-10-25) is in [`docs/SESSION_HANDOFF.md`](docs/SESSION_HANDOFF.md) §4.
+
+## Running with Docker
+
+A second way to run everything, with **no Python or Node setup**, using Docker Compose (Stage 6). It is a local/demo deployment, not production-ready (no TLS, no login; the port is bound to `127.0.0.1`); it passed the owner's manual acceptance on 2026-10-26. Requirements: Docker Desktop running, and Ollama running on the host with `qwen3.5:9b` (Ollama stays on the host: it holds the model and uses the Mac's GPU). The first build downloads about 2 GB and the embedding model (≈ 90 MB) on first use.
+
+```bash
+docker compose up -d --build --wait     # builds the images and starts web UI, API and Qdrant (≈ 8 min the first time)
+open http://127.0.0.1:8080              # the application (port: WEB_PORT)
+python3 deployment/smoke_test.py        # uploads a synthetic document, asks two questions, cleans up
+docker compose down                     # stop; your Docker data stays in named volumes
+```
+
+What differs from the development flow above: it uses **its own, empty index** (documents indexed on the host must be uploaded again; the host's `qdrant_storage/`, `mlflow.db`, and results are never touched), a Qdrant *server* instead of the embedded store, the web UI on port 8080 (not 5173/8000), and Linux/CPU embeddings. Evaluations run in a one-off container: `docker compose run --rm backend python -m app.evaluation.run_evaluation --skip-judge --limit 6`. **Never** run `docker compose down -v`, `docker volume prune`, or `docker system prune --volumes`: they delete the volumes. Configuration, data inventory, backup/restore, and troubleshooting: [`deployment/README.md`](deployment/README.md).
 
 ## Frontend: getting started
 
@@ -349,3 +364,4 @@ Every rate is reported as `value (numerator/denominator)`; an empty denominator 
 - Stage 5.7 (2026-10-16, D-064–D-066): documents indexed before the hybrid index must be deleted and re-uploaded to benefit (older indexes keep working with their previous retrieval). Questions with little word overlap with the answer text, and answers whose list spans two chunks, can still fail (U-016). Conversations are separated by document context per browser tab; they are not shared across tabs or devices.
 - Stage 5.7 stabilisation (2026-10-16, D-067, D-068): prompt v7 stops labelled instruction-like passages from being reported as "conflicting sources" (fixed VEL-INJ-001 in all measured runs; INJ-006 still succeeds in about half of repeated generations on its current evidence). One AgriSense false-premise question now declines instead of correcting the premise. Superseded values are still mentioned for current questions in 3 of 5 outdated-source cases (U-017). The evaluator records its version (`e2`: forbidden content counts only when not negated).
 - Stage 5.7 closure (2026-10-25, prompt v8, D-069–D-074): instruction-like spans are withheld from the model's copy of a passage; explicitly replaced documents are left out for current questions (history questions keep them); an answer must cite at least one supplied passage and use only values and pages from the evidence, or it is regenerated once and then withheld as `model_declined` — so a correct answer that computes a new number (a difference of two prices) may be declined; passages regain the rest of a region that was split across chunks (bounded to 6,000 characters of evidence). The evaluator is `e3` (glosses such as "F (false) dominates" no longer hide a fact) and the VEIL benchmark is v1.1.0. Questions whose answer sits in a chunk ranked below the top four (AGR-VRD-001) still fail; no reranker is used. Results: `docs/PROGRESS_LOG.md` 2026-10-25.
+- Docker deployment (2026-10-26, D-075–D-078): retrieval in the Docker stack is not bit-identical to the host's — dense scores agree to < 4·10⁻⁷ and no evidence-gate decision differed on 173 benchmark questions, but the lexical ordering of the last evidence slot differed for 1 (Qdrant server vs embedded) and 2 (macOS vs Linux) of them. Tested on linux/arm64 (Docker Desktop, Apple Silicon) only; no TLS, authentication, or scaling.

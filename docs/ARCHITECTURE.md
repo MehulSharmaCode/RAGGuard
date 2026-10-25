@@ -1,6 +1,6 @@
 # RAGGuard — Architecture
 
-> Status as of Stage 5.5 plus the pre-demo pass (2026-10-15: second benchmark, prompt v6, citation groups; D-059–D-062) the retrieval pass (2026-10-16: layout-aware extraction, structure-aware chunks, sub-unit index; D-063), and Stage 5.7 (2026-10-16: fragment-safe extraction, hybrid candidates with dense-order evidence, conversations per document context, opt-in diagnostics; D-064–D-066; stabilisation: prompt v7, evaluator e2; D-067, D-068; closure 2026-10-25: prompt v8 — span withholding, supersession policy, answer check, split-region passages — evaluator e3; D-069–D-074): the **backend RAG pipeline and API** (sections 2 "Backend API", 3, 3a — with the Stage 5 prompt-injection and source-handling mitigations, §3c), the **frontend** (sections 2 "Frontend", 3b) including the Evaluation, Experiments, and Pipeline views and app-level conversation state (§3d), the **offline evaluation path** (sections 2 "Evaluation", 4, 4a), **MLflow experiment tracking** (section 2 "Experiment tracking", 4a), and the **read-only dashboard API** (§3d) are implemented. The visual redesign is deferred until the owner supplies references (D-046, D-053); Docker and CI remain proposed. Decisions referenced as `D-xxx` are in [`DECISIONS.md`](DECISIONS.md).
+> Status as of Stage 5.5 plus the pre-demo pass (2026-10-15: second benchmark, prompt v6, citation groups; D-059–D-062) the retrieval pass (2026-10-16: layout-aware extraction, structure-aware chunks, sub-unit index; D-063), and Stage 5.7 (2026-10-16: fragment-safe extraction, hybrid candidates with dense-order evidence, conversations per document context, opt-in diagnostics; D-064–D-066; stabilisation: prompt v7, evaluator e2; D-067, D-068; closure 2026-10-25: prompt v8 — span withholding, supersession policy, answer check, split-region passages — evaluator e3; D-069–D-074), and Stage 6 (2026-10-26: Docker Compose deployment; D-075–D-078, §3e): the **backend RAG pipeline and API** (sections 2 "Backend API", 3, 3a — with the Stage 5 prompt-injection and source-handling mitigations, §3c), the **frontend** (sections 2 "Frontend", 3b) including the Evaluation, Experiments, and Pipeline views and app-level conversation state (§3d), the **offline evaluation path** (sections 2 "Evaluation", 4, 4a), **MLflow experiment tracking** (section 2 "Experiment tracking", 4a), and the **read-only dashboard API** (§3d) are implemented. The visual redesign is deferred until the owner supplies references (D-046, D-053); CI remains proposed. Decisions referenced as `D-xxx` are in [`DECISIONS.md`](DECISIONS.md).
 
 ## 1. System overview
 
@@ -76,8 +76,8 @@ Each evaluation run (and each imported or re-scored report) becomes one run in t
 ### CI/CD — GitHub Actions (`.github/workflows/`)
 Runs API tests and the evaluation suite on configured events, enforces quality thresholds, and only then builds images and proceeds to release stages.
 
-### Packaging — Docker / Docker Compose (`deployment/`, Stage 6)
-Containers for backend, frontend, and Qdrant (and MLflow if self-hosted), orchestrated locally with Docker Compose.
+### Packaging — Docker / Docker Compose (`compose.yaml`, `deployment/`; implemented in Stage 6)
+Three containers orchestrated locally with Docker Compose — web (Nginx, production frontend + reverse proxy), backend (FastAPI), and a Qdrant server — with named volumes; Ollama stays on the host and no MLflow server is used. A local/demo deployment, not production infrastructure. Topology, networking, and data: §3e.
 
 ## 3. Live query path
 
@@ -197,6 +197,34 @@ Views mount and unmount on navigation; the provider does not, so nothing is lost
 **MLflow runs (D-056).** `TrackingReader` uses the CLI's tracking configuration. On first use it imports MLflow (`dependency_missing` if absent); a missing local SQLite file is `no_store` and is not opened. It searches the configured experiment only, returns whitelisted tags, the logged parameters, and catalog metrics (`<key>` and `<key>.denominator`), lists and downloads only `reports/report.json|report.md|failures.json` into a temporary directory, and compares two runs (`compare_runs`) with comparability rules. It never writes. The query path (`/query`, `/ingest`, `/documents`, `/health`) does not touch it.
 
 **System status (D-057).** `build_status` calls `RAGPipeline.health()` (vector store count, embedding loaded flag, provider readiness via Ollama `/api/tags` — no generation), validates the dataset (cached), lists reports, and reads the tracking status; Docker and CI are `not_implemented`. The Pipeline view's diagram is static code-path description filled with `/system/status` configuration; it shows no executions because none are recorded.
+
+## 3e. Docker Compose deployment (Stage 6, D-075–D-078)
+
+Two ways to run the same code: the **host flow** (development: `uvicorn` on 8000, Vite on 5173, embedded Qdrant in `qdrant_storage/`, Ollama on `localhost:11434`) and the **Compose flow** below. They use separate data; nothing from the host is mounted into a container. Operating guide: [`deployment/README.md`](../deployment/README.md).
+
+```
+ browser ── http://127.0.0.1:8080 ──▶ frontend  Nginx (uid 101): static production build
+                                          │       + proxy of /health /ingest /documents /query
+                                          │         /evaluations /experiments /system   (same origin)
+                                          ▼  http://backend:8000   (Docker DNS, resolved per request)
+                                      backend   FastAPI/uvicorn (uid 10001), RAGGUARD_RUNTIME=docker
+                                          ├─▶ qdrant   http://qdrant:6333  server mode (QDRANT_URL), uid 1000
+                                          ├─▶ Ollama   http://host.docker.internal:11434  (on the HOST)
+                                          └─▶ volumes: hf_cache, mlflow (db + artifacts), reports
+ one-off:  docker compose run --rm backend python -m app.evaluation.run_evaluation …
+           (embedded temporary Qdrant inside that container; the server is never used)
+```
+
+- **Browser ↔ API.** The bundle is built with an empty `VITE_API_BASE_URL`, so the client calls its own origin (`client.ts` keeps `""`); Nginx forwards only the route prefixes above. No CORS is involved; download links are relative. Proxy timeouts (330 s) exceed the UI's limits (query 200 s, upload 300 s); Nginx-made failures answer in the API's error shape (`backend_unavailable`, `backend_timeout`). In host development the client keeps its `http://localhost:8000` default.
+- **Backend ↔ Qdrant.** `QDRANT_URL=http://qdrant:6333` selects the supported server mode (`is_local = not qdrant_url`); the collection format is the hybrid index created by the code itself. Qdrant is not published to the host. Retrieval quality is unchanged for dense scores; lexical tie-ordering can differ from the embedded store (D-078).
+- **Backend ↔ Ollama.** `OLLAMA_BASE_URL` is set from `DOCKER_OLLAMA_BASE_URL` (default `host.docker.internal:11434`); readiness is the existing `/api/tags` check, shown in `/health` and the UI. A missing Ollama or model never makes the container unhealthy — it is reported (`degraded`, `generation_unavailable`, `model_missing`).
+- **Embedding model.** Loaded lazily on first ingest or query from the `hf_cache` volume (`HF_HOME`); first use downloads ≈ 90 MB; `HF_HUB_OFFLINE=1` afterwards.
+- **MLflow and reports.** `MLFLOW_TRACKING_URI=sqlite:////data/mlflow/mlflow.db` and `MLFLOW_ARTIFACT_ROOT=/data/mlflow/artifacts` share one volume; the API still only reads them (`no_store` until the first tracked evaluation run); `EVALUATION_RESULTS_DIR=/data/reports` is written by the CLI and read by the API. The datasets are inside the image (`/app/evaluation/datasets`; `config.REPO_ROOT` is `/app`).
+- **Health.** backend: `GET /health` → 200 (process alive; dependency state in the body); web: `/healthz`; Qdrant: `/readyz`. `depends_on: service_healthy` orders start-up.
+- **Hardening.** Non-root users, read-only code, `cap_drop: ALL`, `no-new-privileges`, loopback-only host port, no secrets or data in images (D-077).
+- **`/system/status`.** The `containers` component is `healthy` inside this deployment (set by `RAGGUARD_RUNTIME=docker`) and `configured` on the host; CI stays `not_implemented`.
+
+Not provided: TLS, authentication, scaling or failover, a registry or release pipeline (Stage 7, U-014).
 
 ## 4. Evaluation path
 

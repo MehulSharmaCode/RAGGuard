@@ -64,6 +64,9 @@ qdrant_data/
 uploads/
 backend/uploads/
 
+# Archives of Docker volumes made following deployment/README.md (they contain indexed documents)
+backups/
+
 # ---------------------------------------------------------------
 # Logs, OS and editor files
 # ---------------------------------------------------------------

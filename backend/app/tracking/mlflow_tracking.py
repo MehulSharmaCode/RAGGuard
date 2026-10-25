@@ -85,11 +85,19 @@ class TrackedRun:
     metrics: dict[str, float] = field(default_factory=dict)
 
 
-def resolve_config(tracking_uri: str | None, experiment_name: str | None = None) -> TrackingConfig:
-    """Explicit value > `MLFLOW_TRACKING_URI` setting > local SQLite store in the repo."""
+def resolve_config(
+    tracking_uri: str | None,
+    experiment_name: str | None = None,
+    artifact_root: Path | None = None,
+) -> TrackingConfig:
+    """Explicit value > `MLFLOW_TRACKING_URI` setting > local SQLite store in the repo.
+
+    `artifact_root` (`MLFLOW_ARTIFACT_ROOT`) only matters when an experiment is created.
+    """
     return TrackingConfig(
         tracking_uri=tracking_uri or DEFAULT_TRACKING_URI,
         experiment_name=experiment_name or DEFAULT_EXPERIMENT,
+        artifact_root=artifact_root or DEFAULT_ARTIFACT_ROOT,
     )
 
 

@@ -17,7 +17,7 @@ import pytest
 from fastapi.testclient import TestClient
 from mlflow.tracking import MlflowClient
 
-from app.core.config import Settings
+from app.core.config import REPO_ROOT, Settings
 from app.evaluation import run_evaluation as cli
 from app.evaluation.dataset import LoadedDataset, load_dataset
 from app.evaluation.report import write_reports
@@ -25,11 +25,13 @@ from app.evaluation.runner import RunOptions, run_evaluation
 from app.evaluation.schemas import EvaluationReport
 from app.main import create_app
 from app.tracking.mlflow_tracking import (
+    DEFAULT_ARTIFACT_ROOT,
     TrackingConfig,
     TrackingError,
     extract_metrics,
     extract_params,
     log_report,
+    resolve_config,
 )
 from tests.conftest import FREEDONIA_TXT, FakeEmbedder, FakeProvider
 
@@ -46,8 +48,10 @@ def _temporary_artifact_root(monkeypatch: pytest.MonkeyPatch, tmp_path: Path) ->
     """CLI runs create experiments; keep their artifacts out of the repository's mlartifacts/."""
     original = cli.resolve_config
 
-    def resolve(uri: str | None, name: str | None = None) -> TrackingConfig:
-        return replace(original(uri, name), artifact_root=tmp_path / "cli-artifacts")
+    def resolve(
+        uri: str | None, name: str | None = None, artifact_root: Path | None = None
+    ) -> TrackingConfig:
+        return replace(original(uri, name, artifact_root), artifact_root=tmp_path / "cli-artifacts")
 
     monkeypatch.setattr(cli, "resolve_config", resolve)
 
@@ -166,6 +170,39 @@ def test_run_is_logged_with_matching_params_metrics_and_artifacts(
         round(p.threshold * 100)
         for p in report.threshold_analysis.points  # type: ignore[union-attr]
     ]
+
+
+def test_artifact_root_setting_reaches_the_experiment_and_the_artifacts(
+    dataset: LoadedDataset, settings: Settings, tmp_path: Path, tracking_uri: str
+) -> None:
+    # Stage 6 (D-075): MLFLOW_ARTIFACT_ROOT decides where a new experiment keeps its
+    # artifacts, so the store and its artifacts can live in one persistent volume.
+    root = tmp_path / "volume" / "artifacts"
+    configured = settings.model_copy(update={"mlflow_artifact_root": root})
+    config = resolve_config(tracking_uri, "exp-artifact-root", configured.mlflow_artifact_root)
+    assert config.artifact_root == root
+    report, paths = _report(dataset, settings, tmp_path)
+    tracked = log_report(report.model_dump(mode="json"), paths, config)
+    client = MlflowClient(tracking_uri=tracking_uri)
+    experiment = client.get_experiment_by_name("exp-artifact-root")
+    assert experiment is not None and experiment.artifact_location == root.resolve().as_uri()
+    assert {a.path for a in client.list_artifacts(tracked.run_id, "reports")} >= {
+        "reports/report.json",
+        "reports/failures.json",
+    }
+    assert any(root.rglob("failures.json")), "artifacts are written below the configured root"
+
+
+def test_artifact_root_defaults_and_settings_parsing(monkeypatch: pytest.MonkeyPatch) -> None:
+    assert resolve_config("sqlite:///x.db").artifact_root == DEFAULT_ARTIFACT_ROOT
+    monkeypatch.delenv("MLFLOW_ARTIFACT_ROOT", raising=False)
+    assert Settings(_env_file=None).mlflow_artifact_root is None  # type: ignore[call-arg]
+    monkeypatch.setenv("MLFLOW_ARTIFACT_ROOT", "  ")
+    assert Settings(_env_file=None).mlflow_artifact_root is None  # type: ignore[call-arg]
+    monkeypatch.setenv("MLFLOW_ARTIFACT_ROOT", "/data/mlflow/artifacts")
+    assert Settings(_env_file=None).mlflow_artifact_root == Path("/data/mlflow/artifacts")  # type: ignore[call-arg]
+    monkeypatch.setenv("MLFLOW_ARTIFACT_ROOT", "relative/dir")
+    assert Settings(_env_file=None).mlflow_artifact_root == REPO_ROOT / "relative/dir"  # type: ignore[call-arg]
 
 
 def test_no_secrets_reach_mlflow(

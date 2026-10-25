@@ -577,7 +577,7 @@ def test_status_reflects_real_checks_and_pending_stages(
             "generation": "healthy",
             "evaluation": "healthy",
             "tracking": "configured",  # store configured but not created yet
-            "containers": "not_implemented",
+            "containers": "configured",  # packaging exists; this test process is on the host
             "ci": "not_implemented",
         }
         assert body["latest_evaluation"] is None and body["evaluation_report_count"] == 0
@@ -590,6 +590,26 @@ def test_status_reflects_real_checks_and_pending_stages(
         assert "not reachable" in down["generation"]["detail"]
         assert down["vector_store"]["state"] == "healthy"  # other components unaffected
         assert down["api"]["state"] == "healthy"
+
+
+def test_status_reports_the_container_runtime_only_when_the_image_says_so(
+    settings: Settings, pipeline: RAGPipeline, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    # Stage 6 (D-075): never "not implemented" any more, never "healthy" on the host.
+    def containers() -> dict[str, str]:
+        with _client(settings, pipeline) as api:
+            found = {c["id"]: c for c in api.get("/system/status").json()["components"]}
+            return found["containers"]
+
+    monkeypatch.delenv("RAGGUARD_RUNTIME", raising=False)
+    host = containers()
+    assert host["state"] == "configured" and host["verified"] is False
+    assert "directly on the host" in host["detail"]
+    monkeypatch.setenv("RAGGUARD_RUNTIME", "docker")
+    inside = containers()
+    assert inside["state"] == "healthy" and "inside the Docker Compose" in inside["detail"]
+    monkeypatch.setenv("RAGGUARD_RUNTIME", "something-else")
+    assert containers()["state"] == "configured"
 
 
 def test_status_marks_an_unloaded_embedding_model_as_configured_only(
