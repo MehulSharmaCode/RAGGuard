@@ -1,6 +1,6 @@
 # RAGGuard — Architecture
 
-> Status as of Stage 5.5 plus the pre-demo pass (2026-10-15: second benchmark, prompt v6, citation groups; D-059–D-062) the retrieval pass (2026-10-16: layout-aware extraction, structure-aware chunks, sub-unit index; D-063), and Stage 5.7 (2026-10-16: fragment-safe extraction, hybrid candidates with dense-order evidence, conversations per document context, opt-in diagnostics; D-064–D-066; stabilisation: prompt v7, evaluator e2; D-067, D-068; closure 2026-10-25: prompt v8 — span withholding, supersession policy, answer check, split-region passages — evaluator e3; D-069–D-074), and Stage 6 (2026-10-26: Docker Compose deployment; D-075–D-078, §3e): the **backend RAG pipeline and API** (sections 2 "Backend API", 3, 3a — with the Stage 5 prompt-injection and source-handling mitigations, §3c), the **frontend** (sections 2 "Frontend", 3b) including the Evaluation, Experiments, and Pipeline views and app-level conversation state (§3d), the **offline evaluation path** (sections 2 "Evaluation", 4, 4a), **MLflow experiment tracking** (section 2 "Experiment tracking", 4a), and the **read-only dashboard API** (§3d) are implemented. The visual redesign is deferred until the owner supplies references (D-046, D-053); CI remains proposed. Decisions referenced as `D-xxx` are in [`DECISIONS.md`](DECISIONS.md).
+> Status as of Stage 5.5 plus the pre-demo pass (2026-10-15: second benchmark, prompt v6, citation groups; D-059–D-062) the retrieval pass (2026-10-16: layout-aware extraction, structure-aware chunks, sub-unit index; D-063), and Stage 5.7 (2026-10-16: fragment-safe extraction, hybrid candidates with dense-order evidence, conversations per document context, opt-in diagnostics; D-064–D-066; stabilisation: prompt v7, evaluator e2; D-067, D-068; closure 2026-10-25: prompt v8 — span withholding, supersession policy, answer check, split-region passages — evaluator e3; D-069–D-074), and Stage 6 (2026-10-26: Docker Compose deployment; D-075–D-078, §3e), and Stage 7 (2026-10-26: GitHub Actions workflow and offline quality gate, CI runs in the Pipeline view; D-079–D-084, §5): the **backend RAG pipeline and API** (sections 2 "Backend API", 3, 3a — with the Stage 5 prompt-injection and source-handling mitigations, §3c), the **frontend** (sections 2 "Frontend", 3b) including the Evaluation, Experiments, and Pipeline views and app-level conversation state (§3d), the **offline evaluation path** (sections 2 "Evaluation", 4, 4a), **MLflow experiment tracking** (section 2 "Experiment tracking", 4a), and the **read-only dashboard API** (§3d) are implemented. The visual redesign is deferred until the owner supplies references (D-046, D-053); CI remains proposed. Decisions referenced as `D-xxx` are in [`DECISIONS.md`](DECISIONS.md).
 
 ## 1. System overview
 
@@ -34,7 +34,8 @@ React + TypeScript + Vite + Tailwind CSS single-page application. Talks to the b
 | `src/test/` | Vitest + React Testing Library tests with a mocked HTTP layer |
 | `src/features/evaluation/` | `EvaluationView` (report selector, run header, open findings, metric ledger, latency, judge, definitions), `CaseTable` (filters, expected-vs-actual case detail), `labels` |
 | `src/features/experiments/` | `ExperimentsView` (tracking state, runs table with baseline/candidate selection, run detail with artifact links, comparison) |
-| `src/features/pipeline/` | `PipelineView` (code-path diagram with current settings, offline lane, component status, not-built-yet list) |
+| `src/features/pipeline/` | `PipelineView` (code-path diagram with current settings, offline lane, component status, recent GitHub Actions runs, not-built-yet list) |
+| `src/lib/api/github.ts` | Anonymous, validated, cached read of GitHub's public Actions API for the Pipeline view (D-083); separate from the RAGGuard API client |
 
 ### Backend API (`backend/app/`) — implemented in Stage 2
 FastAPI service with Pydantic schemas.
@@ -50,7 +51,7 @@ FastAPI service with Pydantic schemas.
 | `embeddings/` | `base.py` (`Embedder` protocol incl. tokenizer spans), `sentence_transformer.py` (lazy-loaded local MiniLM) |
 | `retrieval/` | `vector_store.py` (Qdrant client modes, index formats hybrid/subunit/legacy, upsert, filtered dense or hybrid search, listing, deletion), `lexical.py` (BM25-weighted sparse vectors, rank fusion; D-064), `evidence.py` (sufficiency rule, format-aware threshold) |
 | `generation/` | `base.py` (`GenerationProvider` protocol), `ollama.py`, `gemini.py`, `factory.py` (provider selection), `prompts.py` (prompt v8: system rules, evidence framing, markup neutralisation, instruction-hint and supersession labels, instruction-span withholding, supersession policy, repair prompt, citation parsing, decline detection, system-prompt leak check, fallback text), `answer_check.py` (citation, page, and value check, D-071) |
-| `evaluation/` | Offline evaluation (Stages 4–5): `dataset` (schema 2 incl. attack specs, validation, fingerprint), `runner` (isolated store, execution through `RAGPipeline`, `score_case`, `rescore_report`), `metrics` (deterministic checks, versioned as `EVALUATOR_VERSION` and recorded in each report — e2 counts forbidden content only when not negated in its clause, D-068; e3 ignores short parenthetical glosses inside required facts, D-073: retrieval incl. expected pages, citations, claim support, superseded citations, unsupported content, attacks, correctness; aggregates), `threshold` (offline sweep), `judge` (local LLM judge v2), `schemas` + `report` (JSON/Markdown reports, schema 2.0), `run_evaluation` (CLI) |
+| `evaluation/` | Offline evaluation (Stages 4–5): `dataset` (schema 2 incl. attack specs, validation, fingerprint), `runner` (isolated store, execution through `RAGPipeline`, `score_case`, `rescore_report`), `metrics` (deterministic checks, versioned as `EVALUATOR_VERSION` and recorded in each report — e2 counts forbidden content only when not negated in its clause, D-068; e3 ignores short parenthetical glosses inside required facts, D-073: retrieval incl. expected pages, citations, claim support, superseded citations, unsupported content, attacks, correctness; aggregates), `threshold` (offline sweep), `judge` (local LLM judge v2), `schemas` + `report` (JSON/Markdown reports, schema 2.0), `run_evaluation` (CLI), `quality_gate` (Stage 7, D-079: the offline, model-free CI gate and its thresholds file `evaluation/quality_gate.json`) |
 | `evaluation/` (Stage 5.5 additions) | `catalog` (principal metrics: report JSON path = MLflow metric name, label, group, direction), `results` (`ReportStore`: list, view, and serve saved reports read-only, path redaction) |
 | `tracking/` | `mlflow_tracking.py` (Stage 5): logs a report as an MLflow run — whitelisted parameters, flattened metrics, report artifacts (evaluation CLI). `reader.py` (Stage 5.5): read-only `TrackingReader` and run comparison for the API, lazy MLflow import |
 | `system_status.py` | Component states for `GET /system/status` (Stage 5.5) |
@@ -74,7 +75,7 @@ Each evaluation run (and each imported or re-scored report) becomes one run in t
 - The query path never imports MLflow; a tracking failure makes the CLI exit with code 3 after the reports are written. Since Stage 5.5 the API **reads** the same store for the Experiments view, importing MLflow lazily (§3d, D-056).
 
 ### CI/CD — GitHub Actions (`.github/workflows/`)
-Runs API tests and the evaluation suite on configured events, enforces quality thresholds, and only then builds images and proceeds to release stages.
+`ragguard-ci.yml` (Stage 7, D-080) runs on pull requests to `main`, pushes to `main`, and manual dispatch: backend checks, frontend checks, dataset validation, and the offline quality gate (D-079), and only if all of them succeed builds the Docker images. It builds and validates; it does not publish or deploy (§5). Read-only permissions, no secrets, pinned actions (D-084).
 
 ### Packaging — Docker / Docker Compose (`compose.yaml`, `deployment/`; implemented in Stage 6)
 Three containers orchestrated locally with Docker Compose — web (Nginx, production frontend + reverse proxy), backend (FastAPI), and a Qdrant server — with named volumes; Ollama stays on the host and no MLflow server is used. A local/demo deployment, not production infrastructure. Topology, networking, and data: §3e.
@@ -151,6 +152,7 @@ Frontend ── POST question ──▶ FastAPI
 | Open Evaluation (Stage 5.5) | `GET /evaluations`, then `GET /evaluations/{run_id}` (latest readable or `#/evaluation/<run_id>`) | Run header, metric ledger, case table; downloads link to `/evaluations/{run_id}/files/…` |
 | Open Experiments | `GET /experiments/runs`; `GET /experiments/compare` for the selected pair; `GET /experiments/runs/{id}` when a run is expanded | Tracking state, runs table, comparison, artifact links to `/experiments/runs/{id}/artifacts/…` |
 | Open Pipeline / "Check again" | `GET /system/status` | Flow with current settings, component states, not-built-yet list |
+| Open Pipeline / "Refresh runs" (Stage 7) | `GET https://api.github.com/repos/<repo>/actions/runs?per_page=10` straight from the browser (anonymous; cached 5 minutes in `sessionStorage`; never polled) | Recent CI runs with outcome, trigger, commit, and a link to each GitHub run page; loading, empty, rate-limited, unreachable, malformed, and out-of-date states (D-083) |
 
 Errors from any request appear in the region that made it; nothing is replaced with sample data. The backend's CORS default allows `http://localhost:5173` and `http://127.0.0.1:5173`.
 
@@ -222,9 +224,9 @@ Two ways to run the same code: the **host flow** (development: `uvicorn` on 8000
 - **MLflow and reports.** `MLFLOW_TRACKING_URI=sqlite:////data/mlflow/mlflow.db` and `MLFLOW_ARTIFACT_ROOT=/data/mlflow/artifacts` share one volume; the API still only reads them (`no_store` until the first tracked evaluation run); `EVALUATION_RESULTS_DIR=/data/reports` is written by the CLI and read by the API. The datasets are inside the image (`/app/evaluation/datasets`; `config.REPO_ROOT` is `/app`).
 - **Health.** backend: `GET /health` → 200 (process alive; dependency state in the body); web: `/healthz`; Qdrant: `/readyz`. `depends_on: service_healthy` orders start-up.
 - **Hardening.** Non-root users, read-only code, `cap_drop: ALL`, `no-new-privileges`, loopback-only host port, no secrets or data in images (D-077).
-- **`/system/status`.** The `containers` component is `healthy` inside this deployment (set by `RAGGUARD_RUNTIME=docker`) and `configured` on the host; CI stays `not_implemented`.
+- **`/system/status`.** The `containers` component is `healthy` inside this deployment (set by `RAGGUARD_RUNTIME=docker`) and `configured` on the host; `ci` is `configured` since Stage 7 (a workflow exists; the API does not query GitHub).
 
-Not provided: TLS, authentication, scaling or failover, a registry or release pipeline (Stage 7, U-014).
+Not provided: TLS, authentication, scaling or failover, a registry or deployment pipeline (CI only builds the images, §5; U-020).
 
 ## 4. Evaluation path
 
@@ -254,7 +256,7 @@ Compare against version-controlled thresholds ─▶ pass / fail
 
 - The LLM judge supplements deterministic checks (source matching, reference comparison); its scores are recorded with the judge model and prompt version and are not treated as ground truth.
 - Thresholds are defined only after a baseline has been measured (D-012).
-- Metric definitions are fixed in D-043 and written into every report. MLflow (Stage 5) and the threshold comparison / gate (Stage 7) are not implemented yet.
+- Metric definitions are fixed in D-043 and written into every report. MLflow is implemented (Stage 5). The threshold comparison used as a CI gate is the separate, offline, model-free `quality_gate` (Stage 7, §5): it reuses the same retrieval code but never calls generation or the judge.
 
 ## 4a. Implemented evaluation flow (Stage 4)
 
@@ -293,32 +295,37 @@ python -m app.evaluation.run_evaluation  (backend/, sequential)
 - **Judge.** A second `OllamaProvider` instance (temperature 0, seed, JSON-schema format) built from the same settings; it never replaces deterministic metrics and is not weighted into them (D-044).
 - **Run status.** `completed`, `partial` (some case or judge errors, each recorded), or `failed`; CLI exit code 0/1/2. Status describes execution, not quality.
 
-## 5. Release path
+## 5. Release path (implemented in Stage 7, D-079–D-084)
 
 ```
-Code change (push / pull request, as configured)
+pull request to main / push to main / manual run          (no path filters; no secrets)
    │
+   ├─ backend-checks      Python 3.13, CPU PyTorch; ruff, ruff format, mypy, pytest
+   │                       (0 failures, 0 skipped, exactly 1 strict xfail; no data left behind)
+   ├─ frontend-checks     npm ci; typecheck, lint, vitest, build
+   └─ dataset-validation  --validate-only per dataset; versions/fingerprints vs the gate file
+            │
+            ▼
+        quality-gate      offline: real embedding model, no generation model, no Ollama/Gemini
+            │              measures retrieval, evidence, abstention, injection exposure,
+            │              supersession against evaluation/quality_gate.json (fails closed)
+            ▼
+   ┌── image-build        needs: ALL four jobs, no `if`/`always()`
+   │                       docker compose config -q; build backend + frontend images (push: false)
+   │                       checks on the images; NO registry, NO deployment
    ▼
-GitHub Actions
-   ├─ Install, lint/type-check (as configured)
-   ├─ API tests (pytest + httpx)
-   └─ Evaluation suite against the fixed dataset
-         │
-         ▼
-   Quality gate: metrics vs thresholds
-         │                     │
-        pass                  fail
-         │                     │
-         ▼                     ▼
-   Build images          Workflow fails; build/release
-   → later release       jobs do not run; results are
-     stages              reported on the run
+   ci-result (always)     reports every job and whether image-build was eligible; fails unless
+                          all five succeeded  → the one status to require in branch protection
 ```
 
-- Release jobs depend on the gate job, so a failed gate prevents image build and release.
-- **A blocked release does not affect the running deployment.** The currently deployed, previously validated version keeps serving users; the gate only stops the candidate from replacing it.
-- The CI evaluation runs once per qualifying code change, not per user question.
-- How CI obtains LLM/embedding access (secrets, cost limits, or a deterministic test mode) is an unresolved decision for Stage 7.
+- **Dependencies.** `image-build` lists every check and the gate in `needs` and has no condition, so a failed, cancelled, or skipped prerequisite skips it. `tests/test_ci_workflow.py` asserts this and simulates the graph. A failed gate therefore blocks the build, and nothing downstream exists to publish.
+- **The gate (D-079).** `python -m app.evaluation.quality_gate run` ingests each gated dataset into a temporary hybrid index, calls `RAGPipeline.ingest` / `retrieve_evidence`, `check_retrieval`, and `model_text`, and compares counts of questions with the thresholds in `evaluation/quality_gate.json` (D-081). It records the commit, the dataset versions and fingerprints, and the configuration it ran with, and refuses to pass if any of them differs from the file, if a metric is missing or has a changed denominator, or if the measurement is stale. Security metrics are separate checks with zero tolerance. The LLM judge and the full model-based benchmark are intentionally not part of it (reported as "not run").
+- **Reporting.** Each job writes to the workflow step summary; the gate adds a Markdown table (metric, measured, threshold, result, failure reasons, what was not run) and uploads `gate_report.json` / `gate_summary.md` (case IDs and numbers only, never passage text) as an artifact.
+- **Security of the workflow.** `pull_request` only (never `pull_request_target`), `contents: read`, no secrets, actions pinned to verified commit SHAs, fork pull requests run the same jobs without credentials (D-084).
+- **A blocked release does not affect the running deployment.** CI never deploys; the Stage 6 deployment on a developer's machine is untouched by any run. Publishing images or deploying needs a registry and target the owner has not chosen (U-020).
+- **CI status in the UI.** The Pipeline view reads the repository's runs from GitHub's public API in the browser (§3b, D-083); the RAGGuard API does not know about GitHub, and the Nginx Content-Security-Policy allows `https://api.github.com` for this.
+- The CI gate runs once per qualifying code change, never per user question, and shares retrieval code with the live path.
+- **Verified so far:** the same commands locally; the workflow's structure by tests and `actionlint`. **Not yet observed:** a run on GitHub (it needs a push).
 
 ## 6. Cross-cutting concerns
 

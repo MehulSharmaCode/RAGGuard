@@ -26,6 +26,11 @@ function open(hash: string, routes: Record<string, Route | Route[]>) {
   return { api, user };
 }
 
+// The Pipeline view also reads GitHub; these tests are about the RAGGuard status, so GitHub has no runs.
+const noRuns: Record<string, Route> = {
+  "GET /repos/MehulSharmaCode/RAGGuard/actions/runs": { body: { total_count: 0, workflow_runs: [] } },
+};
+
 const row = (table: HTMLElement, text: string) =>
   within(table)
     .getAllByRole("row")
@@ -206,20 +211,22 @@ describe("Experiments view", () => {
 
 describe("Pipeline view", () => {
   it("shows the implemented flow and only verified components as healthy", async () => {
-    open("#/pipeline", { "GET /system/status": { body: systemStatus } });
+    open("#/pipeline", { "GET /system/status": { body: systemStatus }, ...noRuns });
     const table = await screen.findByRole("table", { name: "Component status" });
     expect(row(table, "Backend API")).toHaveTextContent("Healthy");
     expect(row(table, "Answer generation")).toHaveTextContent("Unavailable");
     expect(row(table, "Answer generation")).toHaveTextContent("The Ollama service is not reachable.");
     expect(row(table, "Vector store")).toHaveTextContent("Healthy");
+    expect(row(table, "CI tests and quality gate")).toHaveTextContent("Configured, not verified");
+    expect(row(table, "CI tests and quality gate")).toHaveTextContent("nothing is pushed or deployed");
     expect(row(table, "Embedding model")).toHaveTextContent("Configured, not verified");
     expect(row(table, "Embedding model")).toHaveTextContent("Not checked");
     expect(within(table).queryByText(/Docker/)).not.toBeInTheDocument(); // not implemented: listed separately
 
     const planned = screen.getByRole("region", { name: "Not built yet" });
-    expect(within(planned).getAllByText("Not implemented")).toHaveLength(2);
+    expect(within(planned).getAllByText("Not implemented")).toHaveLength(1);
     expect(planned).toHaveTextContent("Docker / Docker Compose");
-    expect(planned).toHaveTextContent("CI tests and quality gate (GitHub Actions)");
+    expect(planned).not.toHaveTextContent("CI tests and quality gate");
     expect(planned).toHaveTextContent("Frontend redesign");
     expect(planned).not.toHaveTextContent("Healthy");
 
@@ -234,7 +241,7 @@ describe("Pipeline view", () => {
   });
 
   it("shows nothing as healthy when the status cannot be loaded", async () => {
-    open("#/pipeline", { "GET /system/status": "network-error" });
+    open("#/pipeline", { "GET /system/status": "network-error", ...noRuns });
     expect(await screen.findByText("Could not load the system status")).toBeInTheDocument();
     expect(screen.queryByText("Healthy")).not.toBeInTheDocument();
     expect(screen.getByRole("region", { name: "RAG pipeline" })).toHaveTextContent("Unknown (status unavailable).");

@@ -174,6 +174,9 @@ def _passages(retrieval: EvidenceRetrieval) -> list[RetrievedPassage]:
     ]
 
 
+retrieval_passages = _passages  # public name, also used by the offline quality gate
+
+
 def _error(stage: ErrorStage, exc: Exception) -> CaseError:
     if isinstance(exc, AppError):
         return CaseError(stage=stage, code=exc.code, message=exc.message)

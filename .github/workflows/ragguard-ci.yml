@@ -1,0 +1,252 @@
+# RAGGuard CI (Stage 7, D-079-D-084). Documentation: README.md "Continuous integration" and
+# docs/ARCHITECTURE.md section 5.
+#
+#   backend-checks ─┐
+#   frontend-checks ─┼─▶ image-build ─┐
+#   dataset-validation ─▶ quality-gate ─┘   ──▶ ci-result (final status; require this one)
+#
+# image-build runs only if all four jobs before it succeeded (plain `needs`, no `always()`).
+# It builds the Stage 6 images to prove they build; nothing is pushed to a registry and nothing
+# is deployed (U-014). No secret, API key, Ollama, or Gemini is used anywhere.
+name: ragguard-ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+# No path filters on purpose: any change to code, dependencies, datasets, Docker files or this
+# workflow must pass the same checks. `pull_request` (never `pull_request_target`) runs fork code
+# with a read-only token and without secrets.
+permissions:
+  contents: read
+
+# A new push to a pull request cancels that pull request's older run. Pushes to main and manual
+# runs are keyed by commit, so a later push never cancels the result of an earlier commit.
+concurrency:
+  group: ragguard-ci-${{ github.event_name == 'pull_request' && format('pr-{0}', github.event.pull_request.number) || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  TOKENIZERS_PARALLELISM: "false"
+  HF_HUB_DISABLE_TELEMETRY: "1"
+  EMBEDDING_MODEL: sentence-transformers/all-MiniLM-L6-v2
+
+jobs:
+  backend-checks:
+    name: Backend checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-backend
+        with:
+          requirements: requirements-dev.txt
+          embedding-model: ${{ env.EMBEDDING_MODEL }}
+
+      - name: Ruff (lint)
+        working-directory: backend
+        run: ruff check .
+
+      - name: Ruff (format check)
+        working-directory: backend
+        run: ruff format --check .
+
+      - name: Mypy
+        working-directory: backend
+        run: mypy
+
+      - name: Tests (no Ollama, no Gemini; temporary Qdrant and MLflow stores)
+        working-directory: backend
+        run: pytest -q -p no:cacheprovider -rs --junitxml="${RUNNER_TEMP}/junit-backend.xml"
+
+      - name: Skipped tests are not passed tests
+        if: ${{ !cancelled() }}
+        working-directory: backend
+        run: >-
+          python -m app.evaluation.quality_gate junit "${RUNNER_TEMP}/junit-backend.xml"
+          --max-skipped 0 --expected-xfail 1 --summary-file "${GITHUB_STEP_SUMMARY}"
+
+      - name: Tests left no local data behind
+        if: ${{ !cancelled() }}
+        run: |
+          leftovers="$(git status --porcelain --ignored | grep -E 'mlflow\.db|mlartifacts|qdrant_storage|evaluation/results' || true)"
+          if [ -n "${leftovers}" ]; then
+            echo "The test run created data in the checkout (tests must use temporary stores):"
+            echo "${leftovers}"
+            exit 1
+          fi
+          echo "No mlflow.db, mlartifacts/, qdrant_storage/ or evaluation/results/ was created."
+          {
+            echo "- Opt-in real-Ollama test (\`pytest -m ollama\`): **not run**, by design (no model in CI)."
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+  frontend-checks:
+    name: Frontend checks
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: "24"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install (lockfile)
+        run: npm ci
+
+      - name: TypeScript
+        run: npm run typecheck
+
+      - name: ESLint
+        run: npm run lint
+
+      - name: Unit and component tests (Vitest)
+        run: npm run test
+
+      - name: Production build
+        run: npm run build
+
+  dataset-validation:
+    name: Dataset validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-backend
+        with:
+          requirements: requirements-eval.txt
+
+      - name: Schema and cross-checks of every gated dataset (the project's own validator)
+        working-directory: backend
+        run: |
+          python -m app.evaluation.quality_gate list-datasets | while IFS= read -r dataset; do
+            python -m app.evaluation.run_evaluation --validate-only --dataset "${dataset}"
+          done
+
+      - name: Versions and fingerprints match the quality-gate file
+        working-directory: backend
+        run: python -m app.evaluation.quality_gate validate-datasets --summary-file "${GITHUB_STEP_SUMMARY}"
+
+  quality-gate:
+    name: Offline quality gate
+    needs: [dataset-validation]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - uses: ./.github/actions/setup-backend
+        with:
+          requirements: requirements-eval.txt
+          embedding-model: ${{ env.EMBEDDING_MODEL }}
+
+      - name: Measure retrieval, evidence, security and supersession; apply the thresholds
+        working-directory: backend
+        run: >-
+          python -m app.evaluation.quality_gate run
+          --output-dir "${RUNNER_TEMP}/gate" --summary-file "${GITHUB_STEP_SUMMARY}"
+          --expect-commit "${GITHUB_SHA}"
+
+      # Case IDs and numbers only (the report holds no passage, answer, or document text).
+      - name: Keep the gate report
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: quality-gate-report
+          path: ${{ runner.temp }}/gate/
+          if-no-files-found: warn
+          retention-days: 14
+
+  image-build:
+    name: Build Docker images (no push, no deploy)
+    # Every required job must have SUCCEEDED. There is deliberately no `if:` here (and in
+    # particular no `always()`): with the default condition a failed, cancelled, or skipped
+    # prerequisite skips this job.
+    needs: [backend-checks, frontend-checks, dataset-validation, quality-gate]
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Validate the Compose configuration
+        run: docker compose config -q
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      # The same Dockerfiles, context and target as compose.yaml (tests/test_ci_workflow.py checks it).
+      - name: Build the backend image (not pushed)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: deployment/backend.Dockerfile
+          target: runtime
+          push: false
+          load: true
+          tags: ragguard-backend:ci
+          cache-from: type=gha,scope=ragguard-backend
+          cache-to: type=gha,mode=max,scope=ragguard-backend
+
+      - name: Build the frontend image (not pushed)
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          file: deployment/frontend.Dockerfile
+          target: runtime
+          push: false
+          load: true
+          tags: ragguard-frontend:ci
+          cache-from: type=gha,scope=ragguard-frontend
+          cache-to: type=gha,mode=max,scope=ragguard-frontend
+
+      - name: Check the built images
+        run: |
+          set -euo pipefail
+          test "$(docker run --rm --entrypoint id ragguard-backend:ci -u)" = "10001"
+          test "$(docker run --rm --entrypoint id ragguard-frontend:ci -u)" = "101"
+          docker run --rm --entrypoint python ragguard-backend:ci -c "import app.main"
+          docker run --rm --entrypoint nginx ragguard-frontend:ci -t
+          leaked="$(docker run --rm --entrypoint sh ragguard-backend:ci -c 'find /app /data /home -type f \( -name ".env*" -o -name "*.db" -o -name "*.sqlite*" \) 2>/dev/null')"
+          test -z "${leaked}" || { echo "Local data inside the image: ${leaked}"; exit 1; }
+          {
+            echo "### Images built (not pushed, not deployed)"
+            docker images --format '- `{{.Repository}}:{{.Tag}}` {{.Size}}' | grep -E 'ragguard-(backend|frontend):ci'
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+  ci-result:
+    name: CI result
+    # The one status to require in branch protection. `always()` is safe here: this job builds
+    # and publishes nothing; it only reports, and fails unless every job succeeded.
+    if: ${{ always() }}
+    needs: [backend-checks, frontend-checks, dataset-validation, quality-gate, image-build]
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+          sparse-checkout: .github/scripts
+
+      - name: Final status and image-build eligibility
+        env:
+          NEEDS_JSON: ${{ toJSON(needs) }}
+        run: python3 .github/scripts/ci_result.py

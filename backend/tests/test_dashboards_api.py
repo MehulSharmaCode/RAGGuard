@@ -578,7 +578,7 @@ def test_status_reflects_real_checks_and_pending_stages(
             "evaluation": "healthy",
             "tracking": "configured",  # store configured but not created yet
             "containers": "configured",  # packaging exists; this test process is on the host
-            "ci": "not_implemented",
+            "ci": "configured",
         }
         assert body["latest_evaluation"] is None and body["evaluation_report_count"] == 0
         assert body["tracking"]["state"] == "no_store"
