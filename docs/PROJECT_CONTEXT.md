@@ -2,7 +2,7 @@
 
 Concise current-state reference. For stage details see [`ROADMAP.md`](ROADMAP.md); for decisions see [`DECISIONS.md`](DECISIONS.md); for history see [`PROGRESS_LOG.md`](PROGRESS_LOG.md).
 
-_Last updated: 2026-10-25 (**Stage 5.7 closure: prompt v8, evaluator e3, VEIL and AgriSense v1.1.0 — Stage 5.7 ready for the owner's manual acceptance; nothing running, nothing committed; Stage 6 not started**). Earlier: 2026-10-18 pause and stabilisation (prompt v7, evaluator e2)._
+_Last updated: 2026-10-25 (**Stage 5.7 closed: closure pass (prompt v8, evaluator e3, VEIL and AgriSense v1.1.0), checkpoint `e3738ab` pushed to GitHub, the owner's manual acceptance passed; Stages 6–8 pending**). Earlier: 2026-10-18 pause and stabilisation (prompt v7, evaluator e2)._
 
 ## Purpose
 
@@ -10,7 +10,7 @@ RAGGuard is a document-based Retrieval-Augmented Generation (RAG) assistant with
 
 ## Current stage
 
-**Stage 5.7 closure (2026-10-25, owner brief "Stage 5.7 only")** — prompt v8 (span withholding, answer check, supersession policy, split-region passages), evaluator e3, two benchmark revisions; all automated stage criteria verified; **ready for the owner's manual acceptance** ([`SESSION_HANDOFF.md`](SESSION_HANDOFF.md)). Stage 6 starts only on the owner's explicit instruction. (Paused 2026-10-18 – 2026-10-25 for the owner's examinations.)
+**Stage 5.7 closure (2026-10-25, owner brief "Stage 5.7 only")** — prompt v8 (span withholding, answer check, supersession policy, split-region passages), evaluator e3, two benchmark revisions; all automated stage criteria verified; **the owner's manual acceptance passed on 2026-10-25 — Stage 5.7 is closed** ([`SESSION_HANDOFF.md`](SESSION_HANDOFF.md)). The known limitations below still apply. Stage 6 starts only on the owner's explicit instruction. (Paused 2026-10-18 – 2026-10-25 for the owner's examinations.)
 
 *History:* **Stage 5.5 — Conversation persistence, functional dashboards, and product integration** (owner brief 2026-10-14, D-053): implemented; automated tests and Claude's own browser checks passed. On 2026-10-15 a **pre-demo reliability pass** (owner brief, inside the Stage 5.5 scope) added a second benchmark, prompt v6, and citation grouping; on 2026-10-16 a **retrieval reliability pass** (owner brief, before Docker) changed extraction, chunking, indexing, and the evidence threshold (sections below). On 2026-10-16 **Stage 5.7 — cross-document reliability and conversation isolation** (owner brief) fixed a PDF extraction defect, added hybrid candidate retrieval, a fourth benchmark, and conversations per document context (section below); a **stabilisation pass** (2026-10-16 – 18) investigated the security regressions and residual failures, added prompt v7 (D-067) and evaluator e2 (D-068). **The owner has not manually accepted Stage 5.7, 5.5 (or Stage 5) yet** — that is the next checkpoint (handoff below). **Stage 6 (Docker) has not started.**
 
@@ -28,9 +28,9 @@ Repository: `/Users/mehulsharma/Desktop/Developer/RAGGuard`, branch `main`, loca
 | **5.5** | Conversation persistence; Evaluation, Experiments, Pipeline views on real data; read-only dashboard API | **Implemented and automatically verified (2026-10-14); owner acceptance pending** | 288 pytest + 1 opt-in Ollama test; 63 Vitest; ruff/mypy/tsc/ESLint; build; Claude's Chrome checks |
 | 5.5+ | Pre-demo pass: VEIL benchmark (20 cases), attack-exposure metric, prompt v6, citation groups, dataset names in the views | **Implemented (2026-10-15); owner acceptance pending** | 293 pytest + 1 opt-in Ollama test; 67 Vitest; mypy/ruff/tsc/ESLint; build; 8 tracked evaluation runs; Claude's Chrome check of citations |
 | 5.5+ | Retrieval pass: layout-aware PDF extraction, structure-aware chunks, sub-unit vectors (MAX_SIM), threshold 0.35, legacy-index compatibility, structural benchmark (41 cases) | **Implemented (2026-10-16); owner acceptance pending** | 325 pytest + 1 xfail + 1 opt-in Ollama test; 67 Vitest; mypy/ruff/tsc/ESLint; build; 7 tracked evaluation runs; Claude's Chrome check after migration |
-| **5.7** | Fragment-safe extraction, hybrid candidates (dense gate, dense-order evidence), AgriSense benchmark (27 cases), conversation threads per document context, opt-in diagnostics | **Implemented (2026-10-16); owner acceptance pending** | 336 pytest + 1 xfail + 1 opt-in Ollama test; 74 Vitest; mypy/ruff/tsc/ESLint; build; 8 final tracked runs (+ 16 comparison runs); Claude's Chrome check of threads |
-| **5.7 stab.** | Prompt v7 (labelled instruction-like passages cannot be relayed as a disagreement), evaluator e2 (negation-aware forbidden content, versioned reports), scope regression tests, investigation of AGR / superseded / metric cases | **Implemented (2026-10-18); owner acceptance pending** | 347 pytest + 1 xfail + 1 opt-in Ollama test; 74 Vitest; mypy/ruff/tsc/ESLint; build; 8 final tracked runs + 16 judge-off comparison runs; Claude's Chrome check of document-scoped conversations |
-| **5.7 closure** | Prompt v8: instruction-like spans withheld (D-069), supersession policy (D-070), answer check with one repair (D-071), split-region passages (D-072); evaluator e3 (D-073); VEIL 1.1.0, AgriSense 1.1.0 (D-074); test-isolation fix | **Implemented and automatically verified (2026-10-25); ready for the owner's manual acceptance** | 390 pytest + 1 xfail + 1 opt-in Ollama test; 74 Vitest; mypy/ruff/tsc/ESLint; build; 10 tracked runs; Claude's API and Chrome checks on an isolated stack |
+| **5.7** | Fragment-safe extraction, hybrid candidates (dense gate, dense-order evidence), AgriSense benchmark (27 cases), conversation threads per document context, opt-in diagnostics | **Implemented (2026-10-16); owner acceptance passed 2026-10-25 (with the closure)** | 336 pytest + 1 xfail + 1 opt-in Ollama test; 74 Vitest; mypy/ruff/tsc/ESLint; build; 8 final tracked runs (+ 16 comparison runs); Claude's Chrome check of threads |
+| **5.7 stab.** | Prompt v7 (labelled instruction-like passages cannot be relayed as a disagreement), evaluator e2 (negation-aware forbidden content, versioned reports), scope regression tests, investigation of AGR / superseded / metric cases | **Implemented (2026-10-18); owner acceptance passed 2026-10-25 (with the closure)** | 347 pytest + 1 xfail + 1 opt-in Ollama test; 74 Vitest; mypy/ruff/tsc/ESLint; build; 8 final tracked runs + 16 judge-off comparison runs; Claude's Chrome check of document-scoped conversations |
+| **5.7 closure** | Prompt v8: instruction-like spans withheld (D-069), supersession policy (D-070), answer check with one repair (D-071), split-region passages (D-072); evaluator e3 (D-073); VEIL 1.1.0, AgriSense 1.1.0 (D-074); test-isolation fix | **Complete (2026-10-25): automatically verified; the owner's manual acceptance passed (2026-10-25)** | 390 pytest + 1 xfail + 1 opt-in Ollama test; 74 Vitest; mypy/ruff/tsc/ESLint; build; 10 tracked runs; Claude's API and Chrome checks on an isolated stack |
 | 6 | Docker and Docker Compose | **Not started** | — |
 | 7 | GitHub Actions and the automated quality gate | Not started | — |
 | 8 | End-to-end verification, demo, frontend redesign with the owner's references | Not started | — |
@@ -280,7 +280,7 @@ All settings from environment / root `.env` via `backend/app/core/config.py`, do
 
 ## Next action
 
-The owner's manual acceptance of Stage 5.7 — checklist in [`SESSION_HANDOFF.md`](SESSION_HANDOFF.md) §4 (start commands, re-indexing note, expected results). Stage 6 (Docker and Docker Compose) only on the owner's explicit instruction.
+Stage 5.7 is closed (manual acceptance passed 2026-10-25; checklist kept in [`SESSION_HANDOFF.md`](SESSION_HANDOFF.md) §4 for re-checks). Next: Stage 6 (Docker and Docker Compose) **only on the owner's explicit instruction**; Stages 7 and 8 remain pending.
 
 ## Manual-testing handoff (for the owner)
 

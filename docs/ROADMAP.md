@@ -10,12 +10,12 @@ Authoritative stage status. A stage is marked **Complete** only after every comp
 | 4 | Evaluation dataset, metrics, and evaluation runner | Complete (2026-10-14) — UI/API exposure deferred (frontend freeze, D-046); delivered in Stage 5.5 |
 | 5 | Evaluation hardening, RAG reliability/security, and MLflow tracking (redefined 2026-10-14, D-047) | Complete (2026-10-14) — automated verification done; owner's manual run pending |
 | 5.5 | Conversation persistence, functional dashboards, and product integration (inserted 2026-10-14, D-053) | Implemented and automatically verified (2026-10-14); pre-demo pass 2026-10-15 and retrieval reliability pass 2026-10-16 (below) — **owner's manual acceptance pending** |
-| 5.7 | Cross-document reliability and conversation isolation (owner brief 2026-10-16; D-064–D-066), stabilisation 2026-10-16–18 (D-067, D-068), closure 2026-10-25 (D-069–D-074) | **Ready for the owner's manual acceptance (2026-10-25):** automated stage criteria verified (below); residual failures documented — **owner's manual acceptance pending** |
+| 5.7 | Cross-document reliability and conversation isolation (owner brief 2026-10-16; D-064–D-066), stabilisation 2026-10-16–18 (D-067, D-068), closure 2026-10-25 (D-069–D-074) | **Complete (2026-10-25)** — automated stage criteria verified (below) and **the owner's manual acceptance passed (2026-10-25)**; residual failures documented |
 | 6 | Docker and Docker Compose integration | Not started |
 | 7 | GitHub Actions testing and automated quality gate | Not started |
 | 8 | End-to-end integration, verification, documentation, and demonstration preparation | Not started |
 
-**2026-10-25:** development resumed with the Stage 5.7 closure (owner brief, Stage 5.7 only). Next: the owner's manual acceptance of Stage 5.7 (`docs/SESSION_HANDOFF.md`); **Stage 6 only on the owner's explicit instruction.** (2026-10-18: paused for the owner's examinations.)
+**2026-10-25:** Stage 5.7 closed — closure pass (owner brief, Stage 5.7 only), checkpoint commit `e3738ab` pushed to GitHub, and the owner's manual acceptance passed. **Next: Stage 6 only on the owner's explicit instruction.** (2026-10-18: paused for the owner's examinations.)
 
 ---
 
@@ -249,7 +249,7 @@ Details: `PROGRESS_LOG.md` 2026-10-25, D-069–D-074. No Docker, CI, or redesign
 | 12. Evaluations | 2 tracked runs per benchmark (+ AgriSense v1.1.0 pair), judge on; targeted repeats; one bounded prompt experiment (rejected) | Done |
 | 13. No uncontained critical failure | No attack succeeded in any final run; residual injection risk is the heuristic itself (documented); false-premise declines are the safe direction | Done |
 | 14. Documentation | All docs synchronised (`PROGRESS_LOG.md` entry lists them) | Done |
-| 15. Ready for manual acceptance | `docs/SESSION_HANDOFF.md` checklist | **Pending: the owner's manual run** |
+| 15. Ready for manual acceptance | `docs/SESSION_HANDOFF.md` checklist; the owner reported on 2026-10-25 that the local manual acceptance checks passed | **Passed (2026-10-25)** |
 
 **Final tracked runs (v8, e3):** core 84, 84/85; VEIL (v1.1.0) 14, 14/20; structural 39, 38 → 38, 39/41; AgriSense v1.0.0 19, 20/27 and v1.1.0 21, 21/27. **Known costs:** AgriSense latency +40 % (median 2.9 s); false-premise questions still decline (VEL-FPR-001/002, STR-VEL-005, AGR-PVD-001, AGR-FPR-001); AGR-NUM-001 now declines (its v7 passes named the wrong programme).
 

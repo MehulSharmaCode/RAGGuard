@@ -1,16 +1,16 @@
 # RAGGuard — Session Handoff
 
-_Written 2026-10-25 at the end of the Stage 5.7 closure. This is the single handoff; current state lives in [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md), stage status in [`ROADMAP.md`](ROADMAP.md), decisions in [`DECISIONS.md`](DECISIONS.md), history in [`PROGRESS_LOG.md`](PROGRESS_LOG.md) (entry 2026-10-25)._
+_Written 2026-10-25 at the end of the Stage 5.7 closure; updated 2026-10-25 after the owner's manual acceptance (Stage 5.7 closed). This is the single handoff; current state lives in [`PROJECT_CONTEXT.md`](PROJECT_CONTEXT.md), stage status in [`ROADMAP.md`](ROADMAP.md), decisions in [`DECISIONS.md`](DECISIONS.md), history in [`PROGRESS_LOG.md`](PROGRESS_LOG.md) (entry 2026-10-25)._
 
 > **No later stage may start without the owner's explicit authorisation.** Stage 6 (Docker), Stage 7 (CI/CD), and Stage 8 (redesign) are **not started**: no Dockerfile, Compose file, workflow, or redesign work exists. Do not launch Docker.
 
 ## 1. Status
 
-**Stage 5.7 — ready for the owner's manual acceptance.** All automated stage criteria were verified on 2026-10-25 (`ROADMAP.md`, "Stage 5.7 closure"); the owner's manual run (§4) is pending. Stages 5 and 5.5 also await the owner's manual acceptance.
+**Stage 5.7 — closed: manual acceptance passed (2026-10-25).** All automated stage criteria were verified on 2026-10-25 (`ROADMAP.md`, "Stage 5.7 closure"), and the owner reported on 2026-10-25 that the local manual acceptance checks passed, with the application running and the tested functionality working as expected (item-by-item results were not recorded in this repository). The known limitations in §3 still apply; passing these checks does not mean every possible security vulnerability is eliminated. The owner's acceptance of Stages 5 and 5.5 was not stated separately and remains recorded as pending. **Stages 6, 7, and 8 are pending and start only on the owner's explicit instruction.**
 
 - Versions: prompt **v8** (`backend/app/generation/prompts.py`), evaluator **e3** (`EVALUATOR_VERSION`, `backend/app/evaluation/metrics.py`), index format **hybrid**, `MIN_RETRIEVAL_SCORE` 0.35, model `qwen3.5:9b` (Ollama), embeddings `all-MiniLM-L6-v2`, top-k 4.
 - Datasets: core `ragguard-synthetic` 2.0.0 (`858e2d41…`), VEIL 1.1.0 (`4a4cb9a2…`), structural 1.0.0 (`e65ce1bb…`), AgriSense 1.1.0 (`963e3cd4…`).
-- Git: branch `main`, one commit `cc2efb5`; all Stage 4–5.7 work is **uncommitted** (≈ 100 status entries). Never reset, stash, clean, or delete it; commit only when the owner asks.
+- Git: branch `main`, remote `origin` = `https://github.com/MehulSharmaCode/RAGGuard.git` (public). The accepted Stage 5.7 code is commit `e3738ab` ("chore: checkpoint Stage 5.7 before manual acceptance"), pushed to `origin/main` on 2026-10-25. The acceptance records in the docs were added afterwards and are committed only when the owner asks.
 - Nothing is left running by Claude (the isolated test servers on 8013/5174 were stopped; Docker Desktop was quit).
 
 ## 2. What the closure changed (details: D-069–D-074)
@@ -46,7 +46,9 @@ Synthetic attack results do not prove prompt-injection resistance; the heuristic
 - [low] Lexical metric limits: AGR-SEL-001, STR-NEG-001/UNA-REL-005/VEL-UNA-003 (answers that say "not stated" count as false answers).
 - [low] A correct answer that computes a new number (e.g. a price difference) may be regenerated or withheld by the answer check.
 
-## 4. Manual acceptance (the owner)
+## 4. Manual acceptance (the owner) — passed 2026-10-25
+
+_The owner ran this checklist locally and reported that it passed (2026-10-25). It is kept as the reference procedure for re-checks._
 
 ### 4.0 Data and re-indexing
 
@@ -97,7 +99,6 @@ Results can differ slightly between runs (local model). A fallback where an answ
 
 ## 5. Next steps (in order)
 
-1. The owner performs §4 and records the result.
-2. If something blocks acceptance: fix it within Stage 5.7 (measured on all four benchmarks; bump `EVALUATOR_VERSION` if scoring changes; datasets only with a version bump).
-3. Optionally commit the uncommitted work — only when the owner asks.
-4. **Stage 6 only on the owner's explicit instruction.** Preserve the invariants in `CLAUDE.md` (one pipeline; evaluation in temporary stores; layered injection mitigations incl. v8 withholding and the answer check; `/query` contract; dense gate and dense-score order; read-only dashboards; conversation scoping).
+1. ~~The owner performs §4~~ — done: passed 2026-10-25.
+2. Commit and push the acceptance records only when the owner asks.
+3. **Stage 6 (Docker and Docker Compose) only on the owner's explicit instruction**; Stages 7 and 8 follow, each on instruction. The open issues in §3 carry over (none blocked acceptance). Preserve the invariants in `CLAUDE.md` (one pipeline; evaluation in temporary stores; layered injection mitigations incl. v8 withholding and the answer check; `/query` contract; dense gate and dense-score order; read-only dashboards; conversation scoping).

@@ -631,3 +631,20 @@ Comparability: core and structural are directly comparable (same dataset, differ
 **Not run / not verified** — the owner's manual acceptance (Stages 5, 5.5, 5.7); Lighthouse/contrast re-audit; Gemini; a reranker (no model available offline). Docker, CI, and the redesign were not started.
 
 **Next recommended action** — The owner runs the Stage 5.7 manual acceptance in `docs/SESSION_HANDOFF.md`. Stage 6 starts only on the owner's explicit instruction. Nothing was committed.
+
+## 2026-10-25 — Stage 5.7 manual acceptance passed (documentation-only checkpoint)
+
+**Trigger** — The owner reported that Stage 5.7 passed the local manual acceptance checks: the application is running and the tested functionality works as expected. Item-by-item results were not provided to Claude and are not recorded here.
+
+**State inspected before editing** — `git status`: branch `main`, clean working tree, in sync with `origin/main`; `git diff`: empty. Anonymous `git ls-remote https://github.com/MehulSharmaCode/RAGGuard.git`: `refs/heads/main` = `e3738abb86f6dd13d7a7ca15439217dae7afc9b3`, equal to local `HEAD` — the accepted Stage 5.7 code ("chore: checkpoint Stage 5.7 before manual acceptance", pushed earlier on 2026-10-25 after a secret and history audit) is committed and on GitHub.
+
+**Documentation changes (no code changed)**
+- `docs/SESSION_HANDOFF.md` — status "closed: manual acceptance passed (2026-10-25)"; Git line now names the pushed commit and remote; §4 marked as passed and kept as the re-check procedure; next steps now Stage 6 only on instruction.
+- `docs/ROADMAP.md` — Stage 5.7 row "Complete (2026-10-25)"; note under the table; acceptance criterion 15 "Passed (2026-10-25)". Stages 6, 7, 8 unchanged: "Not started".
+- `docs/PROJECT_CONTEXT.md` — header, current stage, status rows for 5.7, 5.7 stab., 5.7 closure, next action.
+- `README.md` — status line and the local-run pointer (they still said acceptance was pending).
+- Unchanged on purpose: automated test results (390 passed / 1 xfailed; frontend 74), evaluation results, and every known limitation (heuristic injection protection — U-018 residual; false-premise declines; AGR-VRD-001, AGR-COR-001, AGR-NUM-001; latency; lexical metric limits). Passing the acceptance checks does not mean that every possible security vulnerability is eliminated. The owner's acceptance of Stages 5 and 5.5 was not stated separately and stays recorded as pending.
+
+**Commands** — `git status -sb`, `git diff --stat`, `git log`, `git ls-remote`, `git rev-parse HEAD`. No tests or evaluations were run (documentation only).
+
+**Next recommended action** — Commit and push these documentation changes when the owner asks. Stage 6 (Docker and Docker Compose) only on the owner's explicit instruction; Stages 7 and 8 remain pending.
